@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI测试助手 - 运用AI技能提效测试</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <span class="logo-icon">🤖</span>
+                <span>AI测试助手</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home" class="active">首页</a></li>
+                <li><a href="#about">关于</a></li>
+                <li><a href="#tools">工具</a></li>
+                <li><a href="#blog">博客</a></li>
+                <li><a href="#contact">联系</a></li>
+            </ul>
+            <button class="mobile-menu-btn">☰</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>运用AI技能<span class="highlight">提效测试</span></h1>
+                <p class="hero-subtitle">分享AI在软件测试领域的应用实践，让测试工作更智能、更高效</p>
+                <div class="hero-buttons">
+                    <a href="#tools" class="btn btn-primary">开始使用工具</a>
+                    <a href="#about" class="btn btn-secondary">了解更多</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                    <pre><code><span class="keyword">import</span> AI_Tester
+
+<span class="comment"># 让AI帮你完成测试</span>
+tester = AI_Tester.<span class="method">smart_assistant</span>()
+tester.<span class="method">generate_cases</span>(requirements)
+tester.<span class="method">write_automation</span>(test_script)
+tester.<span class="method">analyze_bugs</span>(logs)
+
+<span class="comment"># 效率提升 10x 🚀</span></code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <h2>核心能力</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>智能用例生成</h3>
+                    <p>基于需求文档自动生成测试用例，支持功能测试、接口测试、性能测试等多种类型</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3>自动化脚本</h3>
+                    <p>快速生成自动化测试脚本，支持Selenium、Playwright、Appium等主流框架</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>缺陷分析</h3>
+                    <p>智能分析日志和错误信息，快速定位问题根因，提高调试效率</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>测试报告</h3>
+                    <p>自动生成专业的测试报告，包含覆盖率统计和趋势分析</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="about-content">
+                <h2>关于我</h2>
+                <div class="about-text">
+                    <p>你好！我是<span class="highlight">AI测试助手</span>的创建者，专注于探索AI在软件测试领域的应用。</p>
+                    <p>在软件测试行业工作多年，我深刻体会到传统测试方法的局限性。通过不断学习和实践，我发现AI技术可以极大地提升测试效率，让测试工程师有更多时间专注于高价值的测试策略和创新工作。</p>
+                    <p>这个网站汇集了我在AI测试领域的经验和工具，希望能够帮助更多的测试工程师提升工作效率。</p>
+                </div>
+                <div class="skills">
+                    <h3>技术栈</h3>
+                    <div class="skill-tags">
+                        <span class="tag">Python</span>
+                        <span class="tag">Selenium</span>
+                        <span class="tag">Playwright</span>
+                        <span class="tag">Appium</span>
+                        <span class="tag">LLM</span>
+                        <span class="tag">Prompt Engineering</span>
+                        <span class="tag">API Testing</span>
+                        <span class="tag">CI/CD</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools" class="tools">
+            <h2>在线工具</h2>
+            <p class="section-desc">免费的AI测试小工具，可以直接在浏览器中使用</p>
+            
+            <div class="tools-grid">
+                <div class="tool-card" onclick="openTool('testcase')">
+                    <div class="tool-icon">📋</div>
+                    <h3>测试用例生成器</h3>
+                    <p>输入需求描述，AI自动生成测试用例</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+                <div class="tool-card" onclick="openTool('xmind')">
+                    <div class="tool-icon">🧠</div>
+                    <h3>需求转XMind</h3>
+                    <p>将文字需求转换为思维导图结构</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+                <div class="tool-card" onclick="openTool('regexp')">
+                    <div class="tool-icon">🔤</div>
+                    <h3>正则表达式生成</h3>
+                    <p>描述你想要匹配的内容，AI帮你写正则</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+                <div class="tool-card" onclick="openTool('sql')">
+                    <div class="tool-icon">🗄️</div>
+                    <h3>SQL查询生成</h3>
+                    <p>用自然语言描述你想查询的数据</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+                <div class="tool-card" onclick="openTool('api')">
+                    <div class="tool-icon">🌐</div>
+                    <h3>API文档生成</h3>
+                    <p>根据接口描述生成API文档</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+                <div class="tool-card" onclick="openTool('email')">
+                    <div class="tool-icon">📧</div>
+                    <h3>测试报告模板</h3>
+                    <p>快速生成专业的测试报告</p>
+                    <span class="tool-badge">免费使用</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="blog" class="blog">
+            <h2>博客文章</h2>
+            <div class="blog-grid">
+                <article class="blog-card">
+                    <div class="blog-image">🧪</div>
+                    <div class="blog-content">
+                        <span class="blog-date">2024-01-15</span>
+                        <h3>如何用ChatGPT生成高质量测试用例</h3>
+                        <p>分享使用LLM生成测试用例的提示词技巧和最佳实践...</p>
+                        <a href="#" class="read-more">阅读全文 →</a>
+                    </div>
+                </article>
+                <article class="blog-card">
+                    <div class="blog-image">⚡</div>
+                    <div class="blog-content">
+                        <span class="blog-date">2024-01-10</span>
+                        <h3>AI辅助缺陷分析实战</h3>
+                        <p>利用AI快速分析日志，定位bug根因的完整案例...</p>
+                        <a href="#" class="read-more">阅读全文 →</a>
+                    </div>
+                </article>
+                <article class="blog-card">
+                    <div class="blog-image">🔄</div>
+                    <div class="blog-content">
+                        <span class="blog-date">2024-01-05</span>
+                        <h3>自动化测试脚本的AI生成指南</h3>
+                        <p>如何使用AI快速生成可维护的自动化测试脚本...</p>
+                        <a href="#" class="read-more">阅读全文 →</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <h2>联系我</h2>
+            <div class="contact-content">
+                <p>如果你有问题或建议，欢迎随时联系我</p>
+                <div class="contact-links">
+                    <a href="https://github.com/liuliu3198" target="_blank" class="contact-link">
+                        <span class="contact-icon">🐙</span>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="mailto:liuliu3198@example.com" class="contact-link">
+                        <span class="contact-icon">📧</span>
+                        <span>Email</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2024 AI测试助手. 用AI赋能测试，让工作更高效 🚀</p>
+    </footer>
+
+    <div id="toolModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <div id="toolContainer"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
