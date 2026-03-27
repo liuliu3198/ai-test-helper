@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "需求分析",
+    "description": "分析需求文档，提取测试点",
+    "enabled": true
+  },
+  {
+    "id": 2,
+    "name": "测试设计",
+    "description": "设计测试用例和测试策略",
+    "enabled": true
+  },
+  {
+    "id": 3,
+    "name": "自动化测试",
+    "description": "编写自动化测试脚本",
+    "enabled": true
+  },
+  {
+    "id": 4,
+    "name": "缺陷分析",
+    "description": "分析缺陷原因和影响",
+    "enabled": true
+  },
+  {
+    "id": 5,
+    "name": "性能测试",
+    "description": "进行性能测试和调优",
+    "enabled": false
+  },
+  {
+    "id": 6,
+    "name": "安全测试",
+    "description": "进行安全测试和漏洞扫描",
+    "enabled": false
+  }
+]
