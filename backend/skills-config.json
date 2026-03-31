@@ -21,7 +21,7 @@
     "id": 4,
     "name": "缺陷分析",
     "description": "分析缺陷原因和影响",
-    "enabled": true
+    "enabled": false
   },
   {
     "id": 5,

@@ -96,7 +96,9 @@ const API_CONFIG = {
     apiKey: '',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-3.5-turbo',
-    backendUrl: 'http://localhost:3001'
+    backendUrl: window.location.port === '80' || window.location.port === '443' 
+        ? `${window.location.protocol}//${window.location.hostname}` 
+        : `${window.location.protocol}//${window.location.hostname}:3001`
 };
 
 function getApiConfig() {
@@ -105,6 +107,19 @@ function getApiConfig() {
         return JSON.parse(saved);
     }
     return API_CONFIG;
+}
+
+function getBackendUrl() {
+    const config = getApiConfig();
+    const saved = localStorage.getItem('aiTestHelper_apiConfig');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.backendUrl) return parsed.backendUrl;
+    }
+    if (window.location.protocol === 'file:' || !window.location.port) {
+        return 'http://localhost:3001';
+    }
+    return config.backendUrl || 'http://localhost:3001';
 }
 
 function saveApiConfig(config) {
@@ -575,16 +590,11 @@ function openTool(toolKey) {
     container.innerHTML = `
         <h2>${tool.title}</h2>
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">${tool.description}</p>
-        ${!hasAIConfig ? `<div class="api-tip" style="background: #fef3c7; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;">
-            💡 提示：当前使用本地生成器。配置API Key可获得更智能的结果。
-            <a href="#" onclick="showApiSettings(); return false;" style="color: #2563eb;">配置API</a>
-        </div>` : ''}
         <textarea id="toolInput" class="tool-input" placeholder="${tool.placeholder}"></textarea>
         <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
             <button id="generateBtn" class="tool-btn" onclick="generateContent('${toolKey}')">生成内容</button>
             <button id="localBtn" class="tool-btn" style="background: var(--secondary-color);" onclick="generateContent('${toolKey}', true)">本地生成</button>
             <button id="copyBtn" class="tool-btn copy-btn" onclick="copyContent()" style="display: none;">复制结果</button>
-            <button class="tool-btn" style="background: #6b7280; font-size: 0.85rem;" onclick="showApiSettings()">⚙️ API设置</button>
         </div>
         <div id="toolOutput" class="tool-output"></div>
     `;
@@ -672,6 +682,12 @@ function openInteractiveTool(toolKey) {
                         <option value="json2ts">JSON → TypeScript类型</option>
                         <option value="json2go">JSON → Go结构体</option>
                         <option value="json2sql">JSON → SQL建表语句</option>
+                        <option value="json2python">JSON → Python类</option>
+                        <option value="json2csharp">JSON → C#类</option>
+                        <option value="json2rust">JSON → Rust结构体</option>
+                        <option value="json2php">JSON → PHP类</option>
+                        <option value="yaml2json">YAML → JSON</option>
+                        <option value="xml2json">XML → JSON</option>
                     </select>
                 </div>
                 <textarea id="coderInput" class="tool-input" style="min-height: 150px;" placeholder='{"id": 1, "userName": "test", "email": "test@example.com"}'></textarea>
@@ -912,53 +928,183 @@ function convertCode() {
     const output = document.getElementById('coderOutput');
     
     try {
-        const obj = JSON.parse(input);
         let result = '';
         
-        switch(type) {
-            case 'json2java':
-                result = 'public class Entity {\n';
-                Object.entries(obj).forEach(([key, value]) => {
-                    const type = typeof value === 'number' ? (Number.isInteger(value) ? 'Integer' : 'Double') : 'String';
-                    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-                    result += `    private ${type} ${camelKey};\n`;
-                });
-                result += '}';
-                break;
+        if (['json2java', 'json2ts', 'json2go', 'json2sql', 'json2python', 'json2csharp', 'json2rust', 'json2php'].includes(type)) {
+            const obj = JSON.parse(input);
+            
+            switch(type) {
+                case 'json2java':
+                    result = 'public class Entity {\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'Integer' : 'Double') : 'String';
+                        const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+                        result += `    private ${type} ${camelKey};\n`;
+                    });
+                    result += '\n    // Getters and Setters\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'Integer' : 'Double') : 'String';
+                        const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+                        const upperKey = camelKey.charAt(0).toUpperCase() + camelKey.slice(1);
+                        result += `\n    public ${type} get${upperKey}() {\n        return ${camelKey};\n    }\n    public void set${upperKey}(${type} ${camelKey}) {\n        this.${camelKey} = ${camelKey};\n    }`;
+                    });
+                    result += '\n}';
+                    break;
+                    
+                case 'json2ts':
+                    result = 'interface Entity {\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'number' : 'number') : 'string';
+                        result += `    ${key}: ${type};\n`;
+                    });
+                    result += '}';
+                    break;
+                    
+                case 'json2go':
+                    result = 'type Entity struct {\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'int' : 'float64') : 'string';
+                        const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+                        const upperKey = camelKey.charAt(0).toUpperCase() + camelKey.slice(1);
+                        result += `    ${upperKey} ${type} \`json:"${key}"\`\n`;
+                    });
+                    result += '}';
+                    break;
+                    
+                case 'json2sql':
+                    const tableName = 'my_table';
+                    result = `CREATE TABLE ${tableName} (\n`;
+                    result += `    id INT PRIMARY KEY AUTO_INCREMENT,\n`;
+                    Object.entries(obj).forEach(([key, value], idx) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'INT' : 'DECIMAL(10,2)') : 'VARCHAR(255)';
+                        result += `    ${key} ${type}${idx < Object.keys(obj).length - 1 ? ',' : ''}\n`;
+                    });
+                    result += `    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n`;
+                    result += ');';
+                    break;
+                    
+                case 'json2python':
+                    result = 'class Entity:\n    def __init__(self';
+                    const params = Object.keys(obj).map(k => `${k}=None`).join(', ');
+                    result += `(${params}):\n`;
+                    Object.entries(obj).forEach(([key, value]) => {
+                        result += `        self.${key} = ${key}\n`;
+                    });
+                    result += '\n    def to_dict(self):\n        return {\n';
+                    Object.entries(obj).forEach(([key], idx) => {
+                        result += `            "${key}": self.${key}${idx < Object.keys(obj).length - 1 ? ',' : ''}\n`;
+                    });
+                    result += '        }';
+                    break;
+                    
+                case 'json2csharp':
+                    result = 'public class Entity\n{\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const typeMap = { 'number': 'int', 'string': 'string', 'boolean': 'bool' };
+                        const type = typeMap[typeof value] || 'object';
+                        const upperKey = key.charAt(0).toUpperCase() + key.slice(1);
+                        result += `    public ${type} ${upperKey} { get; set; }\n`;
+                    });
+                    result += '}';
+                    break;
+                    
+                case 'json2rust':
+                    result = '#[derive(Serialize, Deserialize)]\npub struct Entity {\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        const type = typeof value === 'number' ? (Number.isInteger(value) ? 'i32' : 'f64') : 'String';
+                        result += `    pub ${key}: ${type},\n`;
+                    });
+                    result += '}';
+                    break;
+                    
+                case 'json2php':
+                    result = '<?php\n\nclass Entity\n{\n';
+                    Object.entries(obj).forEach(([key, value]) => {
+                        result += `    private $${key};\n`;
+                    });
+                    result += '\n    public function __construct(array $data)\n    {\n';
+                    Object.entries(obj).forEach(([key]) => {
+                        result += `        $this->${key} = $data['${key}'] ?? null;\n`;
+                    });
+                    result += '    }\n\n    public function getData(): array\n    {\n        return [\n';
+                    Object.entries(obj).forEach(([key], idx) => {
+                        result += `            '${key}' => $this->${key}${idx < Object.keys(obj).length - 1 ? ',' : ''}\n`;
+                    });
+                    result += '        ];\n    }\n}';
+                    break;
+            }
+        } else if (type === 'yaml2json') {
+            const lines = input.split('\n');
+            const obj = {};
+            let currentKey = '';
+            let indent = 0;
+            
+            lines.forEach(line => {
+                const match = line.match(/^(\s*)([^:]+):\s*(.*)$/);
+                if (match) {
+                    const [, spaces, key, value] = match;
+                    const currentIndent = spaces.length;
+                    
+                    if (value.trim()) {
+                        obj[key.trim()] = value.trim().replace(/['"]/g, '');
+                    } else {
+                        obj[key.trim()] = '';
+                    }
+                }
+            });
+            result = JSON.stringify(obj, null, 2);
+        } else if (type === 'xml2json') {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(input, 'text/xml');
+            
+            function xmlToJson(xml) {
+                let obj = {};
+                if (xml.nodeType === 1) {
+                    if (xml.attributes.length > 0) {
+                        obj['@attributes'] = {};
+                        for (let j = 0; j < xml.attributes.length; j++) {
+                            const attribute = xml.attributes.item(j);
+                            obj['@attributes'][attribute.nodeName] = attribute.nodeValue;
+                        }
+                    }
+                } else if (xml.nodeType === 3) {
+                    obj = xml.nodeValue;
+                }
                 
-            case 'json2ts':
-                result = 'interface Entity {\n';
-                Object.entries(obj).forEach(([key, value]) => {
-                    const type = typeof value === 'number' ? (Number.isInteger(value) ? 'number' : 'number') : 'string';
-                    result += `    ${key}: ${type};\n`;
-                });
-                result += '}';
-                break;
-                
-            case 'json2go':
-                result = 'type Entity struct {\n';
-                Object.entries(obj).forEach(([key, value]) => {
-                    const type = typeof value === 'number' ? (Number.isInteger(value) ? 'int' : 'float64') : 'string';
-                    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-                    result += `    ${camelKey} ${type} \`json:"${key}"\`\n`;
-                });
-                result += '}';
-                break;
-                
-            case 'json2sql':
-                const tableName = 'my_table';
-                result = `CREATE TABLE ${tableName} (\n`;
-                Object.entries(obj).forEach(([key, value], idx) => {
-                    const type = typeof value === 'number' ? (Number.isInteger(value) ? 'INT' : 'DECIMAL(10,2)') : 'VARCHAR(255)';
-                    result += `    ${key} ${type}${idx < Object.keys(obj).length - 1 ? ',' : ''}\n`;
-                });
-                result += ');';
-                break;
+                if (xml.hasChildNodes()) {
+                    for (let i = 0; i < xml.childNodes.length; i++) {
+                        const item = xml.childNodes.item(i);
+                        const nodeName = item.nodeName;
+                        
+                        if (typeof(obj[nodeName]) == 'undefined') {
+                            const json = xmlToJson(item);
+                            if (item.nodeType === 3) {
+                                if (json.trim()) obj = json;
+                            } else {
+                                obj[nodeName] = json;
+                            }
+                        } else {
+                            if (typeof(obj[nodeName].push) == 'undefined') {
+                                const old = obj[nodeName];
+                                obj[nodeName] = [];
+                                obj[nodeName].push(old);
+                            }
+                            obj[nodeName].push(xmlToJson(item));
+                        }
+                    }
+                }
+                return obj;
+            }
+            
+            const jsonObj = xmlToJson(xmlDoc.documentElement);
+            result = JSON.stringify(jsonObj, null, 2);
+        } else {
+            result = '不支持的转换类型';
         }
         
         output.value = result;
     } catch (e) {
-        output.value = '❌ JSON解析错误：' + e.message;
+        output.value = '❌ 转换错误：' + e.message;
     }
 }
 
@@ -1172,7 +1318,9 @@ function clearApiConfig() {
         apiKey: '',
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-3.5-turbo',
-        backendUrl: 'http://localhost:3001'
+        backendUrl: window.location.port === '80' || window.location.port === '443' 
+            ? `${window.location.protocol}//${window.location.hostname}` 
+            : `${window.location.protocol}//${window.location.hostname}:3001`
     });
     alert('✅ 配置已清除');
     showApiSettings();
@@ -1315,19 +1463,11 @@ function testFeatureWithAI(featureKey) {
     container.innerHTML = `
         <div class="tool-container">
             <h2 style="margin-bottom: 1rem;">${feature.icon} ${feature.title}</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">选择技能并输入需求，AI将使用该技能的知识文件来生成内容</p>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">🎯 选择使用的技能</label>
-                <select id="skillSelect" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
-                    <option value="">-- 选择技能 --</option>
-                    ${feature.skills.map(skill => `<option value="${skill}">${skill}</option>`).join('')}
-                </select>
-            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">输入需求，AI将自动使用配置的Skills生成内容</p>
             
             <textarea id="toolInput" class="tool-input" placeholder="请输入需求描述..."></textarea>
             <div style="display: flex; gap: 1rem;">
-                <button class="tool-btn" onclick="generateWithSkill('${featureKey}')">🚀 使用技能生成</button>
+                <button class="tool-btn" onclick="generateWithSkill('${featureKey}')">🚀 立即生成</button>
                 <button class="tool-btn" style="background: var(--secondary-color);" onclick="closeModal()">关闭</button>
             </div>
             <div id="toolOutput" class="tool-output"></div>
@@ -1339,11 +1479,8 @@ function testFeatureWithAI(featureKey) {
 
 async function generateWithSkill(featureKey) {
     const feature = featureDetails[featureKey];
-    const skillSelect = document.getElementById('skillSelect');
     const input = document.getElementById('toolInput').value.trim();
     const output = document.getElementById('toolOutput');
-    
-    const selectedSkill = skillSelect.value;
     
     if (!input) {
         alert('请输入需求描述');
@@ -1351,75 +1488,69 @@ async function generateWithSkill(featureKey) {
     }
     
     output.classList.add('visible');
-    output.textContent = '正在加载技能和文件中...\n请稍候...';
+    output.textContent = '正在加载配置和文件中...\n请稍候...';
     
     try {
-        const [configRes, filesRes] = await Promise.all([
-            fetch('http://localhost:3001/api/llm/config'),
-            fetch('http://localhost:3001/api/skills/files')
+        const backendUrl = getBackendUrl();
+        const [configRes, filesRes, mappingRes] = await Promise.all([
+            fetch(`${backendUrl}/api/llm/config`),
+            fetch(`${backendUrl}/api/skills/files`),
+            fetch(`${backendUrl}/api/feature-skills`)
         ]);
         
         const configData = await configRes.json();
         const filesData = await filesRes.json();
+        const mappingData = await mappingRes.json();
         
         if (!configData.config.apiKey) {
             output.textContent = '⚠️ 请先在后台配置LLM API Key\n\n操作步骤：\n1. 点击导航栏"后台" \n2. 登录账号 (admin/admin123)\n3. 在"LLM模型配置"中填写API Key\n4. 保存配置后重试';
             return;
         }
         
-        const skillMapping = {
-            '需求分析': '1',
-            '测试设计': '2',
-            '自动化测试': '3',
-            '缺陷分析': '4',
-            '性能测试': '5',
-            '安全测试': '6',
-            '边界值分析': '1',
-            '等价类划分': '1',
-            'Selenium': '3',
-            'Playwright': '3',
-            'Appium': '3',
-            'Python': '3',
-            'JavaScript': '3',
-            '日志分析': '4',
-            'Debug': '4',
-            '根因分析': '4',
-            '问题定位': '4',
-            '测试报告': '2',
-            '数据分析': '2',
-            '覆盖率统计': '2',
-            '趋势分析': '2'
+        const mapping = mappingData.mapping || {};
+        const featureSkills = mapping[featureKey] || feature.skills;
+        
+        const skillToId = {
+            '需求分析': '1', '测试设计': '2', '自动化测试': '3',
+            '缺陷分析': '4', '性能测试': '5', '安全测试': '6',
+            '数据分析': '2'
         };
         
-        let skillId = skillMapping[selectedSkill] || '1';
+        let allFiles = [];
+        let skillsUsed = [];
         
-        if (!selectedSkill) {
-            output.textContent = '请先选择一个技能';
-            return;
+        for (const skillName of featureSkills) {
+            const skillId = skillToId[skillName] || '1';
+            const files = filesData.skillsFiles?.[skillId]?.files || [];
+            if (files.length > 0) {
+                allFiles = allFiles.concat(files);
+                skillsUsed.push(skillName);
+            }
         }
         
-        const skillFiles = filesData.skillsFiles?.[skillId]?.files || [];
-        
-        if (skillFiles.length > 0) {
-            output.textContent = `已选择技能: ${selectedSkill}\n已加载 ${skillFiles.length} 个知识文件\n\n正在通过LLM生成中，请稍候...\n\n（如果长时间无响应，请检查后台LLM配置）`;
+        if (allFiles.length > 0) {
+            output.textContent = `正在使用 ${skillsUsed.join('、')} 技能\n已加载 ${allFiles.length} 个知识文件\n\n通过LLM生成中，请稍候...`;
         } else {
-            output.textContent = `已选择技能: ${selectedSkill}\n⚠️ 该技能尚未上传知识文件，将使用通用能力生成\n\n正在通过LLM生成中，请稍候...`;
+            output.textContent = `正在通过LLM生成中，请稍候...`;
         }
         
-        const response = await fetch('http://localhost:3001/api/skills/process', {
+        const primarySkillId = skillToId[featureSkills[0]] || '1';
+        
+        const response = await fetch(`${backendUrl}/api/skills/process`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                skillId: skillId,
+                skillId: primarySkillId,
+                toolKey: featureKey,
                 prompt: feature.prompt.replace('{input}', input),
-                context: `用户选择使用${selectedSkill}技能`
+                context: `使用技能: ${featureSkills.join('、')}`
             })
         });
         
         const data = await response.json();
         
         if (data.success) {
-            output.textContent = `✅ 使用技能: ${data.skillInfo?.name || selectedSkill}\n📁 参考文件数: ${data.filesUsed || 0}\n\n---\n\n${data.content}`;
+            output.textContent = `✅ 使用技能: ${skillsUsed.join('、') || featureSkills.join('、')}\n📁 参考文件数: ${data.filesUsed || 0}\n\n---\n\n${data.content}`;
         } else if (data.needConfig) {
             output.textContent = '⚠️ ' + data.error + '\n\n请先在后台配置LLM API Key';
         } else {
@@ -1461,38 +1592,67 @@ async function generateContent(toolKey, forceLocal = false) {
     let usedLocal = forceLocal;
     
     const config = getApiConfig();
+    const backendUrl = getBackendUrl();
     
-    if (!forceLocal) {
-        if (config.backendUrl) {
-            output.textContent = '🤖 正在调用AI生成...\n\n';
-            const prompt = getPromptForTool(toolKey, input);
-            const aiResult = await callAI(prompt, tool.systemPrompt, toolKey);
+    if (!forceLocal && (config.apiKey || config.backendUrl)) {
+        output.textContent = '🤖 正在通过Skills AI生成...\n\n';
+        
+        try {
+            const mappingRes = await fetch(`${backendUrl}/api/feature-skills`);
+            const mappingData = await mappingRes.json();
+            const mapping = mappingData.mapping || {};
+            const toolSkills = mapping[toolKey] || [];
             
-            if (aiResult.error) {
-                output.textContent += `AI生成失败: ${aiResult.message}\n\n将使用本地生成器...\n\n`;
-                usedLocal = true;
-            } else {
-                result = aiResult.content;
+            if (toolSkills.length > 0) {
+                output.textContent = `使用技能: ${toolSkills.join('、')}\n\n`;
+            }
+            
+            const skillToId = {
+                '需求分析': '1', '测试设计': '2', '自动化测试': '3',
+                '缺陷分析': '4', '性能测试': '5', '安全测试': '6',
+                '数据分析': '2'
+            };
+            
+            const primarySkillId = skillToId[toolSkills[0]] || '1';
+            
+            const prompt = getPromptForTool(toolKey, input);
+            
+            output.textContent += '⏳ 正在生成，请稍候...\n';
+            
+            const response = await fetch(`${backendUrl}/api/skills/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    skillId: primarySkillId,
+                    toolKey: toolKey,
+                    prompt: prompt,
+                    context: `使用技能: ${toolSkills.join('、')}`
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                result = data.content;
                 output.textContent = '';
-            }
-        } else if (config.apiKey) {
-            const prompt = getPromptForTool(toolKey, input);
-            const aiResult = await callAI(prompt, tool.systemPrompt, toolKey);
-            
-            if (aiResult.error) {
-                output.textContent = `AI生成失败: ${aiResult.message}\n\n将使用本地生成器...\n\n`;
+            } else if (data.needConfig) {
+                output.textContent += `⚠️ ${data.error}\n\n将使用本地生成...\n\n`;
                 usedLocal = true;
             } else {
-                result = aiResult.content;
+                output.textContent += `⚠️ AI生成失败: ${data.error}\n\n将使用本地生成...\n\n`;
+                usedLocal = true;
             }
-        } else {
+        } catch (error) {
+            output.textContent += `❌ 连接失败: ${error.message}\n\n请检查后端服务是否正在运行，或使用"本地生成"功能。\n\n将使用本地生成...\n\n`;
             usedLocal = true;
         }
+    } else {
+        usedLocal = true;
     }
     
     if (usedLocal || !result) {
         result = localGenerators[toolKey](input);
-        if (output.textContent.includes('将使用本地生成器')) {
+        if (output.textContent.includes('本地生成')) {
             result = output.textContent + result;
         }
     }
@@ -1502,7 +1662,7 @@ async function generateContent(toolKey, forceLocal = false) {
     
     generateBtn.disabled = false;
     localBtn.disabled = false;
-    generateBtn.textContent = 'AI生成';
+    generateBtn.textContent = '生成内容';
     localBtn.textContent = '本地生成';
     copyBtn.style.display = 'inline-block';
     
@@ -1577,8 +1737,9 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 const TOOLS_PER_PAGE = 8;
 let currentToolsPage = 1;
+let toolCardsData = [];
 
-const toolCardsData = [
+const allToolsData = [
     { key: 'testcase', icon: '📋', title: '测试用例生成器', desc: '输入需求描述，AI自动生成测试用例', badge: '免费使用', isNew: false },
     { key: 'xmind', icon: '🧠', title: '需求转XMind', desc: '将文字需求转换为思维导图结构', badge: '免费使用', isNew: false },
     { key: 'regexp', icon: '🔤', title: '正则表达式生成', desc: '描述你想要匹配的内容，AI帮你写正则', badge: '免费使用', isNew: false },
@@ -1592,6 +1753,30 @@ const toolCardsData = [
     { key: 'encoder', icon: '🔐', title: '编码转换工具', desc: 'URL编码、Base64、MD5等编码转换', badge: 'NEW', isNew: true },
     { key: 'timestamp', icon: '⏰', title: '时间戳转换', desc: '时间戳与日期格式互转', badge: 'NEW', isNew: true }
 ];
+
+async function loadToolsConfig() {
+    try {
+        const backendUrl = getBackendUrl();
+        const response = await fetch(`${backendUrl}/api/online-tools`);
+        const data = await response.json();
+        
+        if (data.success && data.tools) {
+            const enabledTools = data.tools.filter(t => t.enabled).map(t => {
+                const toolInfo = allToolsData.find(d => d.key === t.key);
+                return toolInfo ? { ...toolInfo } : null;
+            }).filter(t => t !== null);
+            
+            toolCardsData = enabledTools;
+        } else {
+            toolCardsData = allToolsData;
+        }
+    } catch (error) {
+        toolCardsData = allToolsData;
+    }
+    
+    renderToolsPage(1);
+    renderCoreFeatures();
+}
 
 function renderToolsPage(page) {
     const container = document.getElementById('toolsContainer');
@@ -1643,7 +1828,7 @@ function changeToolsPage(page) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    renderToolsPage(1);
+    loadToolsConfig();
     renderAboutSection();
     
     window.saveAbout = function() {
@@ -1703,5 +1888,32 @@ function renderAboutSection() {
         aboutSkills.innerHTML = aboutData.skills
             .map(skill => `<span class="tag">${skill}</span>`)
             .join('');
+    }
+}
+
+async function renderCoreFeatures() {
+    const container = document.getElementById('featuresGrid');
+    if (!container) return;
+    
+    try {
+        const backendUrl = getBackendUrl();
+        const response = await fetch(`${backendUrl}/api/core-features`);
+        const data = await response.json();
+        
+        const features = data.features || [];
+        
+        container.innerHTML = features.map(key => {
+            const tool = allToolsData.find(d => d.key === key);
+            if (!tool) return '';
+            return `
+                <div class="feature-card" onclick="openTool('${key}')">
+                    <div class="feature-icon">${tool.icon}</div>
+                    <h3>${tool.title}</h3>
+                    <p>${tool.desc}</p>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">加载核心能力失败</p>';
     }
 }

@@ -1,6 +1,6 @@
 {
-  "provider": "siliconflow",
-  "apiKey": "",
+  "provider": "openai",
+  "apiKey": "***已配置***",
   "baseUrl": "https://api.siliconflow.cn/v1",
   "model": "Qwen/Qwen2.5-7B-Instruct"
 }

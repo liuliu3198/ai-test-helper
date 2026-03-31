@@ -1,0 +1,62 @@
+[
+  {
+    "key": "testcase",
+    "enabled": true,
+    "showInCore": true
+  },
+  {
+    "key": "xmind",
+    "enabled": true,
+    "showInCore": true
+  },
+  {
+    "key": "regexp",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "sql",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "api",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "email",
+    "enabled": true,
+    "showInCore": true
+  },
+  {
+    "key": "apitest",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "faker",
+    "enabled": true,
+    "showInCore": true
+  },
+  {
+    "key": "json",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "coder",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "encoder",
+    "enabled": true,
+    "showInCore": false
+  },
+  {
+    "key": "timestamp",
+    "enabled": true,
+    "showInCore": true
+  }
+]
