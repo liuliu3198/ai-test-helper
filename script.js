@@ -585,6 +585,11 @@ function openTool(toolKey) {
         return;
     }
     
+    if (toolKey === 'tempmail') {
+        window.open('https://www.linshi-email.com/', '_blank');
+        return;
+    }
+    
     const tool = toolTemplates[toolKey];
     const modal = document.getElementById('toolModal');
     const container = document.getElementById('toolContainer');
@@ -1760,7 +1765,8 @@ const allToolsData = [
     { key: 'json', icon: '📄', title: 'JSON格式化', desc: '格式化、校验、压缩JSON数据', badge: 'NEW', isNew: true },
     { key: 'coder', icon: '💻', title: '代码转换器', desc: '代码格式互转，如JSON转Java实体类', badge: 'NEW', isNew: true },
     { key: 'encoder', icon: '🔐', title: '编码转换工具', desc: 'URL编码、Base64、MD5等编码转换', badge: 'NEW', isNew: true },
-    { key: 'timestamp', icon: '⏰', title: '时间戳转换', desc: '时间戳与日期格式互转', badge: 'NEW', isNew: true }
+    { key: 'timestamp', icon: '⏰', title: '时间戳转换', desc: '时间戳与日期格式互转', badge: 'NEW', isNew: true },
+    { key: 'tempmail', icon: '📨', title: '临时邮件', desc: '生成临时邮箱，用于测试邮箱验证', badge: 'NEW', isNew: true }
 ];
 
 async function loadToolsConfig() {
