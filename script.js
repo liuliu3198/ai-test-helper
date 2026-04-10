@@ -575,6 +575,11 @@ const localGenerators = {
 };
 
 function openTool(toolKey) {
+    if (toolKey === 'regexp') {
+        window.open('https://www.regexp.cn/regex', '_blank');
+        return;
+    }
+    
     const tool = toolTemplates[toolKey];
     const modal = document.getElementById('toolModal');
     const container = document.getElementById('toolContainer');
