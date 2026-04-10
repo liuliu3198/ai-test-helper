@@ -580,6 +580,11 @@ function openTool(toolKey) {
         return;
     }
     
+    if (toolKey === 'json') {
+        window.open('https://www.bejson.com/', '_blank');
+        return;
+    }
+    
     const tool = toolTemplates[toolKey];
     const modal = document.getElementById('toolModal');
     const container = document.getElementById('toolContainer');
