@@ -116,10 +116,17 @@ function getBackendUrl() {
         const parsed = JSON.parse(saved);
         if (parsed.backendUrl) return parsed.backendUrl;
     }
-    if (window.location.protocol === 'file:' || !window.location.port) {
+    
+    if (window.location.protocol === 'file:') {
         return 'http://localhost:3001';
     }
-    return config.backendUrl || 'http://localhost:3001';
+    
+    const port = window.location.port;
+    if (!port || port === '80' || port === '443') {
+        return window.location.origin + '/api';
+    }
+    
+    return window.location.origin + '/api';
 }
 
 function saveApiConfig(config) {
@@ -1897,10 +1904,15 @@ async function renderCoreFeatures() {
     
     try {
         const backendUrl = getBackendUrl();
+        console.log('Core Features API URL:', backendUrl + '/api/core-features');
         const response = await fetch(`${backendUrl}/api/core-features`);
         const data = await response.json();
         
-        const features = data.features || [];
+        let features = data.features || [];
+        
+        if (features.length === 0) {
+            features = ['testcase', 'xmind', 'email', 'faker', 'timestamp'];
+        }
         
         container.innerHTML = features.map(key => {
             const tool = allToolsData.find(d => d.key === key);

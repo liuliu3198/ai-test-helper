@@ -4,11 +4,10 @@ const ADMIN_CONFIG = {
 };
 
 function getBackendUrl() {
-    const port = window.location.port;
-    if (window.location.protocol === 'file:' || !port || port === '80' || port === '443' || port === '') {
+    if (window.location.protocol === 'file:') {
         return 'http://localhost:3001';
     }
-    return `${window.location.protocol}//${window.location.hostname}:3001`;
+    return window.location.origin + '/api';
 }
 
 let isLoggedIn = false;
