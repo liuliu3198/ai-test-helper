@@ -1910,6 +1910,8 @@ async function renderCoreFeatures() {
     const container = document.getElementById('featuresGrid');
     if (!container) return;
     
+    let features = [];
+    
     try {
         const backendUrl = getBackendUrl();
         const apiUrl = `${backendUrl}/api/core-features`;
@@ -1917,7 +1919,7 @@ async function renderCoreFeatures() {
         const response = await fetch(apiUrl);
         const data = await response.json();
         
-        let features = data.features || [];
+        features = data.features || [];
         
         if (features.length === 0) {
             features = ['testcase', 'xmind', 'email', 'faker', 'timestamp'];
