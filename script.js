@@ -110,18 +110,15 @@ function getApiConfig() {
 }
 
 function getBackendUrl() {
-    const config = getApiConfig();
-    const saved = localStorage.getItem('aiTestHelper_apiConfig');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.backendUrl) return parsed.backendUrl;
-    }
+    const currentHost = window.location.hostname;
+    const currentPort = window.location.port;
+    const isLocal = currentHost === 'localhost' || currentHost === '127.0.0.1' || window.location.protocol === 'file:';
     
-    if (window.location.protocol === 'file:') {
+    if (isLocal) {
         return 'http://localhost:3001';
     }
     
-    return window.location.origin + '/api';
+    return window.location.origin;
 }
 
 function saveApiConfig(config) {
@@ -1899,8 +1896,9 @@ async function renderCoreFeatures() {
     
     try {
         const backendUrl = getBackendUrl();
-        console.log('Core Features API URL:', backendUrl + '/api/core-features');
-        const response = await fetch(`${backendUrl}/api/core-features`);
+        const apiUrl = `${backendUrl}/api/core-features`;
+        console.log('Core Features API URL:', apiUrl);
+        const response = await fetch(apiUrl);
         const data = await response.json();
         
         let features = data.features || [];

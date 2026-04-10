@@ -4,10 +4,14 @@ const ADMIN_CONFIG = {
 };
 
 function getBackendUrl() {
-    if (window.location.protocol === 'file:') {
+    const currentHost = window.location.hostname;
+    const isLocal = currentHost === 'localhost' || currentHost === '127.0.0.1' || window.location.protocol === 'file:';
+    
+    if (isLocal) {
         return 'http://localhost:3001';
     }
-    return window.location.origin + '/api';
+    
+    return window.location.origin;
 }
 
 let isLoggedIn = false;
