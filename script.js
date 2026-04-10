@@ -121,11 +121,6 @@ function getBackendUrl() {
         return 'http://localhost:3001';
     }
     
-    const port = window.location.port;
-    if (!port || port === '80' || port === '443') {
-        return window.location.origin + '/api';
-    }
-    
     return window.location.origin + '/api';
 }
 

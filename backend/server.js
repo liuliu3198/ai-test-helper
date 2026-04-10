@@ -854,6 +854,10 @@ app.delete('/api/tools/files/:toolKey/:filename', (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🤖 AI测试助手后端服务已启动: http://localhost:${PORT}`);
-});
+if (process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`🤖 AI测试助手后端服务已启动: http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
