@@ -1906,19 +1906,20 @@ async function renderCoreFeatures() {
         if (features.length === 0) {
             features = ['testcase', 'xmind', 'email', 'faker', 'timestamp'];
         }
-        
-        container.innerHTML = features.map(key => {
-            const tool = allToolsData.find(d => d.key === key);
-            if (!tool) return '';
-            return `
-                <div class="feature-card" onclick="openTool('${key}')">
-                    <div class="feature-icon">${tool.icon}</div>
-                    <h3>${tool.title}</h3>
-                    <p>${tool.desc}</p>
-                </div>
-            `;
-        }).join('');
     } catch (error) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">加载核心能力失败</p>';
+        console.log('Failed to fetch core features, using defaults');
+        features = ['testcase', 'xmind', 'email', 'faker', 'timestamp'];
     }
+    
+    container.innerHTML = features.map(key => {
+        const tool = allToolsData.find(d => d.key === key);
+        if (!tool) return '';
+        return `
+            <div class="feature-card" onclick="openTool('${key}')">
+                <div class="feature-icon">${tool.icon}</div>
+                <h3>${tool.title}</h3>
+                <p>${tool.desc}</p>
+            </div>
+        `;
+    }).join('');
 }
