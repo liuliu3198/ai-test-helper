@@ -606,7 +606,7 @@ function openTool(toolKey) {
         <p style="color: var(--text-secondary); margin-bottom: 1rem;">${tool.description}</p>
         <textarea id="toolInput" class="tool-input" placeholder="${tool.placeholder}"></textarea>
         <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <button id="generateBtn" class="tool-btn" onclick="generateContent('${toolKey}')">生成内容</button>
+            <button id="generateBtn" class="tool-btn" onclick="generateContent('${toolKey}')">AI生成</button>
             <button id="localBtn" class="tool-btn" style="background: var(--secondary-color);" onclick="generateContent('${toolKey}', true)">本地生成</button>
             <button id="copyBtn" class="tool-btn copy-btn" onclick="copyContent()" style="display: none;">复制结果</button>
         </div>
@@ -1676,7 +1676,7 @@ async function generateContent(toolKey, forceLocal = false) {
     
     generateBtn.disabled = false;
     localBtn.disabled = false;
-    generateBtn.textContent = '生成内容';
+    generateBtn.textContent = 'AI生成';
     localBtn.textContent = '本地生成';
     copyBtn.style.display = 'inline-block';
     
