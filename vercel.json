@@ -10,26 +10,18 @@
       "use": "@vercel/static"
     },
     {
-      "src": "script.js",
+      "src": "*.js",
       "use": "@vercel/static"
     },
     {
-      "src": "styles.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "blog.js",
+      "src": "*.css",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/server.js"
+      "dest": "/backend/server.js"
     },
     {
       "handle": "filesystem"
