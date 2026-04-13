@@ -590,6 +590,11 @@ function openTool(toolKey) {
         return;
     }
     
+    if (toolKey === 'pdf') {
+        window.open('https://www.ilovepdf.com/zh-cn', '_blank');
+        return;
+    }
+    
     const tool = toolTemplates[toolKey];
     const modal = document.getElementById('toolModal');
     const container = document.getElementById('toolContainer');
@@ -1766,7 +1771,8 @@ const allToolsData = [
     { key: 'coder', icon: '💻', title: '代码转换器', desc: '代码格式互转，如JSON转Java实体类', badge: 'NEW', isNew: true },
     { key: 'encoder', icon: '🔐', title: '编码转换工具', desc: 'URL编码、Base64、MD5等编码转换', badge: 'NEW', isNew: true },
     { key: 'timestamp', icon: '⏰', title: '时间戳转换', desc: '时间戳与日期格式互转', badge: 'NEW', isNew: true },
-    { key: 'tempmail', icon: '📨', title: '临时邮件', desc: '生成临时邮箱，用于测试邮箱验证', badge: 'NEW', isNew: true }
+    { key: 'tempmail', icon: '📨', title: '临时邮件', desc: '生成临时邮箱，用于测试邮箱验证', badge: 'NEW', isNew: true },
+    { key: 'pdf', icon: '📄', title: 'PDF处理工具', desc: 'PDF文件在线处理，包括合并、分割、转换等', badge: 'NEW', isNew: true }
 ];
 
 async function loadToolsConfig() {
