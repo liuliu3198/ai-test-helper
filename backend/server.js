@@ -255,6 +255,21 @@ app.post('/api/chat', async (req, res) => {
             if (config.apiKey) API_KEY = config.apiKey;
             if (config.baseUrl) BASE_URL = config.baseUrl;
             if (config.model) Model = config.model;
+            
+            // 根据API Provider设置默认Base URL
+            if (config.provider === 'baidu') {
+                BASE_URL = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions';
+            } else if (config.provider === 'ali') {
+                BASE_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+            } else if (config.provider === 'tencent') {
+                BASE_URL = 'https://api.tencentcloud.com';
+            } else if (config.provider === 'bytedance') {
+                BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+            } else if (config.provider === 'azure') {
+                BASE_URL = 'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-03-01-preview';
+            } else if (config.provider === 'google') {
+                BASE_URL = 'https://generativelanguage.googleapis.com/v1/models/MODEL_NAME:generateContent';
+            }
         }
 
         if (!API_KEY) {
@@ -415,6 +430,21 @@ app.post('/api/skills/process', async (req, res) => {
             if (config.apiKey) API_KEY = config.apiKey;
             if (config.baseUrl) BASE_URL = config.baseUrl;
             if (config.model) Model = config.model;
+            
+            // 根据API Provider设置默认Base URL
+            if (config.provider === 'baidu') {
+                BASE_URL = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions';
+            } else if (config.provider === 'ali') {
+                BASE_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+            } else if (config.provider === 'tencent') {
+                BASE_URL = 'https://api.tencentcloud.com';
+            } else if (config.provider === 'bytedance') {
+                BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+            } else if (config.provider === 'azure') {
+                BASE_URL = 'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-03-01-preview';
+            } else if (config.provider === 'google') {
+                BASE_URL = 'https://generativelanguage.googleapis.com/v1/models/MODEL_NAME:generateContent';
+            }
         }
 
         if (!API_KEY) {
@@ -565,14 +595,22 @@ app.post('/api/llm/config', (req, res) => {
 
 app.post('/api/llm/test', async (req, res) => {
     try {
-        const { apiKey, baseUrl, model } = req.body;
+        const { apiKey, baseUrl, model, provider } = req.body;
         
         if (!apiKey || !baseUrl || !model) {
             return res.json({ success: false, error: '请填写API Key、Base URL和Model' });
         }
         
+        // 根据不同的API Provider构建请求URL
+        let requestUrl = baseUrl;
+        // 检查Base URL是否已经包含了完整路径
+        if (!requestUrl.includes('/chat/completions') && !requestUrl.includes('/generateContent')) {
+            // 对于标准的OpenAI兼容API，添加/chat/completions路径
+            requestUrl = `${baseUrl}/chat/completions`;
+        }
+        
         const response = await axios.post(
-            `${baseUrl}/chat/completions`,
+            requestUrl,
             {
                 model: model,
                 messages: [
@@ -650,6 +688,21 @@ app.post('/api/ai/chat', async (req, res) => {
             if (config.apiKey) API_KEY = config.apiKey;
             if (config.baseUrl) BASE_URL = config.baseUrl;
             if (config.model) Model = config.model;
+            
+            // 根据API Provider设置默认Base URL
+            if (config.provider === 'baidu') {
+                BASE_URL = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions';
+            } else if (config.provider === 'ali') {
+                BASE_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+            } else if (config.provider === 'tencent') {
+                BASE_URL = 'https://api.tencentcloud.com';
+            } else if (config.provider === 'bytedance') {
+                BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+            } else if (config.provider === 'azure') {
+                BASE_URL = 'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-03-01-preview';
+            } else if (config.provider === 'google') {
+                BASE_URL = 'https://generativelanguage.googleapis.com/v1/models/MODEL_NAME:generateContent';
+            }
         }
 
         if (!API_KEY) {

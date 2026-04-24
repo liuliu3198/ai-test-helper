@@ -1,6 +1,6 @@
 {
-  "provider": "openai",
-  "apiKey": "***已配置***",
-  "baseUrl": "https://api.siliconflow.cn/v1",
-  "model": "Qwen/Qwen2.5-7B-Instruct"
+  "provider": "custom",
+  "apiKey": "c29dfb64-ec9b-4bd7-9ffa-5bdd792a4017",
+  "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+  "model": "doubao-seed-2-0-mini-260215"
 }

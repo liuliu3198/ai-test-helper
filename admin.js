@@ -82,25 +82,30 @@ function openAdminPanel() {
                         <span id="llmStatus" style="color: var(--secondary-color); font-weight: 600;">加载中...</span>
                     </div>
                     <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">API Provider</label>
-                    <select id="llmProvider" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
-                        <option value="siliconflow">SiliconFlow</option>
+                    <select id="llmProvider" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;" onchange="updateBaseUrlByProvider()">
+                        <option value="siliconflow">SiliconFlow (硅基流动)</option>
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>
+                        <option value="azure">Azure OpenAI</option>
+                        <option value="google">Google Gemini</option>
+                        <option value="baidu">百度文心一言</option>
+                        <option value="ali">阿里云通义千问</option>
+                        <option value="tencent">腾讯混元大模型</option>
+                        <option value="bytedance">火山引擎 (豆包)</option>
                         <option value="custom">自定义</option>
                     </select>
                     <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">API Key</label>
-                    <input type="password" id="llmApiKey" placeholder="输入API Key" style="width: 100%;">
+                    <div style="position: relative; width: 100%;">
+                        <input type="password" id="llmApiKey" placeholder="输入API Key" style="width: 100%; padding-right: 40px;">
+                        <button type="button" onclick="toggleApiKeyVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-secondary);">
+                            👁️
+                        </button>
+                    </div>
                     <label style="font-weight: 600; margin: 1rem 0 0.5rem; display: block;">Base URL</label>
                     <input type="text" id="llmBaseUrl" placeholder="https://api.siliconflow.cn/v1" style="width: 100%;">
                     <label style="font-weight: 600; margin: 1rem 0 0.5rem; display: block;">Model</label>
-                    <select id="llmModel" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
-                        <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct (通义千问)</option>
-                        <option value="baichuan-inc/Baichuan2-7B-Chat">baichuan-inc/Baichuan2-7B-Chat (百川智能)</option>
-                        <option value="01-ai/Yi-34B-Chat">01-ai/Yi-34B-Chat (零一万物)</option>
-                        <option value="THUDM/chatglm3-6b">THUDM/chatglm3-6b (清华大学GLM)</option>
-                        <option value="ByteDance/LLaMA2-7B-Chat">ByteDance/LLaMA2-7B-Chat (字节跳动)</option>
-                        <option value="Qwen/Qwen2.5-14B-Instruct">Qwen/Qwen2.5-14B-Instruct (通义千问14B)</option>
-                    </select>
+                    <input type="text" id="llmModel" list="modelList" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;" placeholder="选择或输入模型名称">
+                    <datalist id="modelList"></datalist>
                     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                         <button class="admin-btn-primary" onclick="saveLLMConfig()">保存LLM配置</button>
                         <button class="admin-btn-primary" style="background: var(--secondary-color);" onclick="testLLMConfig()">🔗 测试连接</button>
@@ -372,9 +377,15 @@ async function loadLLMConfig() {
         const data = await response.json();
         
         if (data.success) {
-            document.getElementById('llmProvider').value = data.config.provider || 'siliconflow';
+            const provider = data.config.provider || 'siliconflow';
+            document.getElementById('llmProvider').value = provider;
             document.getElementById('llmApiKey').value = data.config.apiKey || '';
             document.getElementById('llmBaseUrl').value = data.config.baseUrl || 'https://api.siliconflow.cn/v1';
+            
+            // 先更新模型列表
+            updateModelList(provider);
+            
+            // 然后设置模型值
             document.getElementById('llmModel').value = data.config.model || 'Qwen/Qwen2.5-7B-Instruct';
             document.getElementById('llmStatus').textContent = data.config.apiKey ? '✅ 已配置' : '❌ 未配置';
             document.getElementById('llmStatus').style.color = data.config.apiKey ? 'var(--secondary-color)' : '#ef4444';
@@ -382,10 +393,14 @@ async function loadLLMConfig() {
     } catch (error) {
         document.getElementById('llmStatus').textContent = '❌ 连接失败';
         document.getElementById('llmStatus').style.color = '#ef4444';
+        
+        // 出错时也更新模型列表为默认值
+        updateModelList('siliconflow');
     }
 }
 
 async function testLLMConfig() {
+    const provider = document.getElementById('llmProvider').value;
     const apiKey = document.getElementById('llmApiKey').value.trim();
     const baseUrl = document.getElementById('llmBaseUrl').value.trim();
     const model = document.getElementById('llmModel').value.trim();
@@ -407,7 +422,7 @@ async function testLLMConfig() {
         const response = await fetch(`${backendUrl}/api/llm/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey, baseUrl, model })
+            body: JSON.stringify({ provider, apiKey, baseUrl, model })
         });
         
         const data = await response.json();
@@ -875,5 +890,113 @@ async function saveSkillsConfig() {
         }
     } catch (error) {
         alert('保存失败: ' + error.message);
+    }
+}
+
+function updateBaseUrlByProvider() {
+    const provider = document.getElementById('llmProvider').value;
+    const baseUrlInput = document.getElementById('llmBaseUrl');
+    const modelSelect = document.getElementById('llmModel');
+    
+    const baseUrls = {
+        siliconflow: 'https://api.siliconflow.cn/v1',
+        openai: 'https://api.openai.com/v1',
+        anthropic: 'https://api.anthropic.com/v1',
+        azure: 'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-03-01-preview',
+        google: 'https://generativelanguage.googleapis.com/v1/models/MODEL_NAME:generateContent',
+        baidu: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions',
+        ali: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+        tencent: 'https://api.tencentcloud.com',
+        bytedance: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+        custom: ''
+    };
+    
+    baseUrlInput.value = baseUrls[provider] || '';
+    updateModelList(provider);
+}
+
+function updateModelList(provider) {
+    const modelInput = document.getElementById('llmModel');
+    const modelList = document.getElementById('modelList');
+    modelList.innerHTML = '';
+    
+    const providerModels = {
+        siliconflow: [
+            { value: 'Qwen/Qwen2.5-7B-Instruct', label: 'Qwen/Qwen2.5-7B-Instruct (通义千问)' },
+            { value: 'Qwen/Qwen2.5-14B-Instruct', label: 'Qwen/Qwen2.5-14B-Instruct (通义千问14B)' },
+            { value: 'baichuan-inc/Baichuan2-7B-Chat', label: 'baichuan-inc/Baichuan2-7B-Chat (百川智能)' },
+            { value: '01-ai/Yi-34B-Chat', label: '01-ai/Yi-34B-Chat (零一万物)' },
+            { value: 'THUDM/chatglm3-6b', label: 'THUDM/chatglm3-6b (清华大学GLM)' },
+            { value: 'ByteDance/LLaMA2-7B-Chat', label: 'ByteDance/LLaMA2-7B-Chat (字节跳动)' },
+            { value: 'meta-llama/Llama-3-8b-chat-hf', label: 'meta-llama/Llama-3-8b-chat-hf (Meta Llama 3)' },
+            { value: 'microsoft/phi-3-mini-128k-instruct', label: 'microsoft/phi-3-mini-128k-instruct (Microsoft Phi-3)' }
+        ],
+        openai: [
+            { value: 'gpt-4o', label: 'gpt-4o' },
+            { value: 'gpt-4-turbo', label: 'gpt-4-turbo' },
+            { value: 'gpt-4', label: 'gpt-4' },
+            { value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo' }
+        ],
+        anthropic: [
+            { value: 'claude-3-opus-20240229', label: 'claude-3-opus-20240229' },
+            { value: 'claude-3-sonnet-20240229', label: 'claude-3-sonnet-20240229' },
+            { value: 'claude-3-haiku-20240307', label: 'claude-3-haiku-20240307' }
+        ],
+        azure: [
+            { value: 'gpt-4o', label: 'gpt-4o' },
+            { value: 'gpt-4-turbo', label: 'gpt-4-turbo' },
+            { value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo' }
+        ],
+        google: [
+            { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro' },
+            { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
+            { value: 'gemini-1.0-pro', label: 'gemini-1.0-pro' }
+        ],
+        baidu: [
+            { value: 'ernie-3.5', label: 'ernie-3.5 (文心一言)' },
+            { value: 'ernie-4.0', label: 'ernie-4.0 (文心一言4.0)' }
+        ],
+        ali: [
+            { value: 'qwen2.5-7b-chat', label: 'qwen2.5-7b-chat (通义千问)' },
+            { value: 'qwen2.5-14b-chat', label: 'qwen2.5-14b-chat (通义千问14B)' },
+            { value: 'qwen2.5-32b-chat', label: 'qwen2.5-32b-chat (通义千问32B)' }
+        ],
+        tencent: [
+            { value: 'hunyuan-pro', label: 'hunyuan-pro (混元大模型)' },
+            { value: 'hunyuan-standard', label: 'hunyuan-standard (混元标准)' }
+        ],
+        bytedance: [
+            { value: 'doubao-1.5-pro', label: 'doubao-1.5-pro (豆包)' },
+            { value: 'doubao-1.5-flash', label: 'doubao-1.5-flash (豆包Flash)' },
+            { value: 'doubao-code', label: 'doubao-code (豆包代码)' }
+        ],
+        custom: [
+            { value: '', label: '请手动输入模型名称' }
+        ]
+    };
+    
+    const models = providerModels[provider] || providerModels.siliconflow;
+    
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.value;
+        option.textContent = model.label;
+        modelList.appendChild(option);
+    });
+    
+    // 不进行默认展示，保持输入框为空
+    modelInput.value = '';
+}
+
+function toggleApiKeyVisibility() {
+    const apiKeyInput = document.getElementById('llmApiKey');
+    const toggleButton = apiKeyInput.nextElementSibling;
+    
+    if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        toggleButton.textContent = '🙈';
+    } else {
+        apiKeyInput.type = 'password';
+        toggleButton.textContent = '👁️';
     }
 }
