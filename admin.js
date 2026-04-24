@@ -93,7 +93,14 @@ function openAdminPanel() {
                     <label style="font-weight: 600; margin: 1rem 0 0.5rem; display: block;">Base URL</label>
                     <input type="text" id="llmBaseUrl" placeholder="https://api.siliconflow.cn/v1" style="width: 100%;">
                     <label style="font-weight: 600; margin: 1rem 0 0.5rem; display: block;">Model</label>
-                    <input type="text" id="llmModel" placeholder="Qwen/Qwen2.5-7B-Instruct" style="width: 100%;">
+                    <select id="llmModel" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem;">
+                        <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct (通义千问)</option>
+                        <option value="baichuan-inc/Baichuan2-7B-Chat">baichuan-inc/Baichuan2-7B-Chat (百川智能)</option>
+                        <option value="01-ai/Yi-34B-Chat">01-ai/Yi-34B-Chat (零一万物)</option>
+                        <option value="THUDM/chatglm3-6b">THUDM/chatglm3-6b (清华大学GLM)</option>
+                        <option value="ByteDance/LLaMA2-7B-Chat">ByteDance/LLaMA2-7B-Chat (字节跳动)</option>
+                        <option value="Qwen/Qwen2.5-14B-Instruct">Qwen/Qwen2.5-14B-Instruct (通义千问14B)</option>
+                    </select>
                     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                         <button class="admin-btn-primary" onclick="saveLLMConfig()">保存LLM配置</button>
                         <button class="admin-btn-primary" style="background: var(--secondary-color);" onclick="testLLMConfig()">🔗 测试连接</button>
