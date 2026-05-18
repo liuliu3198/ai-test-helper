@@ -138,14 +138,132 @@ function showLoginPage() {
     
     container.innerHTML = `
         <div class="login-form">
-            <h2>🔐 管理员登录</h2>
+            <h2>🔐 登录 / 注册</h2>
+            
             <div id="loginError" class="login-error"></div>
-            <input type="text" id="adminUsername" placeholder="用户名">
-            <input type="password" id="adminPassword" placeholder="密码">
-            <button onclick="handleLogin()">登录</button>
-            <p style="text-align: center; margin-top: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
-                默认账号: admin / admin123
-            </p>
+            
+            <div id="loginTab_password" class="login-tab-content active">
+                <input type="text" id="adminUsername" placeholder="用户名 / 手机号 / 邮箱">
+                <input type="password" id="adminPassword" placeholder="密码">
+                <button onclick="handleLogin()">登录</button>
+                <div class="login-form-footer">
+                    <p class="login-hint">默认账号: admin / admin123</p>
+                    <p class="login-register">
+                        还没有账号？<a href="javascript:void(0)" onclick="showRegisterForm()" style="color: var(--primary-color);">立即注册</a>
+                    </p>
+                </div>
+            </div>
+            
+            <div id="loginTab_wework" class="login-tab-content">
+                <div style="text-align: center; padding: 2rem 0;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🏢</div>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">使用企业微信扫码登录</p>
+                    <div style="background: #f5f5f5; padding: 2rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">请使用企业微信扫描下方二维码</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: white; border: 2px dashed var(--border-color); border-radius: 4px;">
+                            <p style="color: var(--text-secondary);">📱 企业微信二维码</p>
+                            <p style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.5rem;">（请配置企业微信自建应用）</p>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">扫码后将自动登录，无需注册</p>
+                </div>
+            </div>
+            
+            <div id="loginTab_phone" class="login-tab-content">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <select id="phonePrefix" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; background: white;">
+                        <option value="+86">+86</option>
+                        <option value="+852">+852</option>
+                        <option value="+853">+853</option>
+                        <option value="+886">+886</option>
+                    </select>
+                    <input type="tel" id="phoneNumber" placeholder="手机号" style="flex: 1;">
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="phoneCode" placeholder="验证码" style="flex: 1;">
+                    <button onclick="sendPhoneCode()" id="sendCodeBtn" style="padding: 0.75rem; white-space: nowrap;">发送验证码</button>
+                </div>
+                <button onclick="handlePhoneLogin()" style="width: 100%; padding: 0.875rem;">登录 / 注册</button>
+                <p class="login-hint" style="margin-top: 1rem;">未注册手机号将自动创建账号</p>
+            </div>
+            
+            <div id="loginTab_email" class="login-tab-content">
+                <input type="email" id="emailAddress" placeholder="邮箱地址">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="emailCode" placeholder="验证码" style="flex: 1;">
+                    <button onclick="sendEmailCode()" id="sendEmailCodeBtn" style="padding: 0.75rem; white-space: nowrap;">发送验证码</button>
+                </div>
+                <button onclick="handleEmailLogin()" style="width: 100%; padding: 0.875rem;">登录 / 注册</button>
+                <p class="login-hint" style="margin-top: 1rem;">未注册邮箱将自动创建账号</p>
+            </div>
+            
+            <div id="registerForm" class="login-tab-content" style="display: none;">
+                <div style="margin-bottom: 1rem;">
+                    <select id="registerType" onchange="updateRegisterFields()" style="width: 100%; padding: 0.875rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; margin-bottom: 1rem;">
+                        <option value="username">用户名注册</option>
+                        <option value="phone">手机号注册</option>
+                        <option value="email">邮箱注册</option>
+                    </select>
+                </div>
+                <div id="registerUsernameField">
+                    <input type="text" id="registerUsername" placeholder="用户名">
+                    <input type="password" id="registerPassword" placeholder="密码">
+                    <input type="password" id="registerPasswordConfirm" placeholder="确认密码">
+                </div>
+                <div id="registerPhoneField" style="display: none;">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <select id="registerPhonePrefix" style="padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; background: white;">
+                            <option value="+86">+86</option>
+                            <option value="+852">+852</option>
+                            <option value="+853">+853</option>
+                            <option value="+886">+886</option>
+                        </select>
+                        <input type="tel" id="registerPhoneNumber" placeholder="手机号" style="flex: 1;">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="registerPhoneCode" placeholder="验证码" style="flex: 1;">
+                        <button onclick="sendRegisterPhoneCode()" id="sendRegisterCodeBtn" style="padding: 0.75rem; white-space: nowrap;">发送验证码</button>
+                    </div>
+                </div>
+                <div id="registerEmailField" style="display: none;">
+                    <input type="email" id="registerEmailAddress" placeholder="邮箱地址">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="registerEmailCode" placeholder="验证码" style="flex: 1;">
+                        <button onclick="sendRegisterEmailCode()" id="sendRegisterEmailCodeBtn" style="padding: 0.75rem; white-space: nowrap;">发送验证码</button>
+                    </div>
+                </div>
+                <button onclick="handleRegister()" style="width: 100%; padding: 0.875rem;">注册</button>
+                <p class="login-register" style="margin-top: 1rem;">
+                    已有账号？<a href="javascript:void(0)" onclick="showLoginForm()" style="color: var(--primary-color);">立即登录</a>
+                </p>
+            </div>
+            
+            <div class="login-divider">
+                <span>其他登录方式</span>
+            </div>
+            
+            <div class="social-login">
+                <div onclick="switchLoginTab('wework')" class="social-login-item">
+                    <span>🏢</span>
+                    <span>企业微信</span>
+                </div>
+                <div onclick="switchLoginTab('phone')" class="social-login-item">
+                    <span>📱</span>
+                    <span>手机号</span>
+                </div>
+                <div onclick="switchLoginTab('email')" class="social-login-item">
+                    <span>📧</span>
+                    <span>邮箱</span>
+                </div>
+                <div onclick="showWechatLogin()" class="social-login-item">
+                    <span>💬</span>
+                    <span>微信</span>
+                </div>
+                <div onclick="showQQLogin()" class="social-login-item">
+                    <span>🐧</span>
+                    <span>QQ</span>
+                </div>
+            </div>
         </div>
     `;
     
@@ -154,9 +272,14 @@ function showLoginPage() {
 }
 
 function handleLogin() {
-    const username = document.getElementById('adminUsername').value;
+    const username = document.getElementById('adminUsername').value.trim();
     const password = document.getElementById('adminPassword').value;
     const errorDiv = document.getElementById('loginError');
+    
+    if (!username || !password) {
+        errorDiv.textContent = '请输入用户名和密码';
+        return;
+    }
     
     if (adminLogin(username, password)) {
         const modal = document.getElementById('toolModal');
@@ -167,6 +290,320 @@ function handleLogin() {
         }, 100);
     } else {
         errorDiv.textContent = '用户名或密码错误';
+    }
+}
+
+function switchLoginTab(tabName) {
+    const tabs = document.querySelectorAll('.login-tab');
+    const contents = document.querySelectorAll('.login-tab-content');
+    
+    tabs.forEach(tab => tab.classList.remove('active'));
+    contents.forEach(content => content.classList.remove('active'));
+    
+    const activeTab = document.querySelector(`[onclick="switchLoginTab('${tabName}')"]`);
+    const activeContent = document.getElementById(`loginTab_${tabName}`);
+    
+    if (activeTab) activeTab.classList.add('active');
+    if (activeContent) activeContent.classList.add('active');
+}
+
+function sendPhoneCode() {
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    const phonePrefix = document.getElementById('phonePrefix').value;
+    const errorDiv = document.getElementById('loginError');
+    const sendBtn = document.getElementById('sendCodeBtn');
+    
+    if (!phoneNumber) {
+        errorDiv.textContent = '请输入手机号';
+        return;
+    }
+    
+    const fullPhone = phonePrefix + phoneNumber;
+    
+    errorDiv.textContent = '正在发送验证码...';
+    sendBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('验证码已发送至 ' + fullPhone + '\n演示模式：验证码为 123456');
+        errorDiv.textContent = '';
+        
+        let countdown = 60;
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                sendBtn.textContent = '发送验证码';
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.textContent = `${countdown}秒后重试`;
+            }
+        }, 1000);
+    }, 1000);
+}
+
+function handlePhoneLogin() {
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    const phoneCode = document.getElementById('phoneCode').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (!phoneNumber) {
+        errorDiv.textContent = '请输入手机号';
+        return;
+    }
+    
+    if (!phoneCode) {
+        errorDiv.textContent = '请输入验证码';
+        return;
+    }
+    
+    if (phoneCode === '123456') {
+        errorDiv.textContent = '';
+        
+        const modal = document.getElementById('toolModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        setTimeout(() => {
+            alert('登录成功！\n手机号：' + document.getElementById('phonePrefix').value + phoneNumber + '\n\n提示：演示模式，请配置真实短信服务');
+            openAdminPanel();
+        }, 100);
+    } else {
+        errorDiv.textContent = '验证码错误（演示验证码：123456）';
+    }
+}
+
+function sendEmailCode() {
+    const emailAddress = document.getElementById('emailAddress').value;
+    const errorDiv = document.getElementById('loginError');
+    const sendBtn = document.getElementById('sendEmailCodeBtn');
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailAddress || !emailRegex.test(emailAddress)) {
+        errorDiv.textContent = '请输入有效的邮箱地址';
+        return;
+    }
+    
+    errorDiv.textContent = '正在发送验证码...';
+    sendBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('验证码已发送至 ' + emailAddress + '\n演示模式：验证码为 123456');
+        errorDiv.textContent = '';
+        
+        let countdown = 60;
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                sendBtn.textContent = '发送验证码';
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.textContent = `${countdown}秒后重试`;
+            }
+        }, 1000);
+    }, 1000);
+}
+
+function handleEmailLogin() {
+    const emailAddress = document.getElementById('emailAddress').value;
+    const emailCode = document.getElementById('emailCode').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailAddress || !emailRegex.test(emailAddress)) {
+        errorDiv.textContent = '请输入有效的邮箱地址';
+        return;
+    }
+    
+    if (!emailCode) {
+        errorDiv.textContent = '请输入验证码';
+        return;
+    }
+    
+    if (emailCode === '123456') {
+        errorDiv.textContent = '';
+        
+        const modal = document.getElementById('toolModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        setTimeout(() => {
+            alert('登录成功！\n邮箱：' + emailAddress + '\n\n提示：演示模式，请配置真实邮件服务');
+            openAdminPanel();
+        }, 100);
+    } else {
+        errorDiv.textContent = '验证码错误（演示验证码：123456）';
+    }
+}
+
+function showWechatLogin() {
+    const errorDiv = document.getElementById('loginError');
+    errorDiv.textContent = '';
+    switchLoginTab('wework');
+}
+
+function showQQLogin() {
+    const errorDiv = document.getElementById('loginError');
+    alert('提示：\n\n微信和QQ登录需要配置相应的OAuth应用\n\n请联系管理员配置：\n- 微信开放平台账号\n- QQ互联应用\n\n或使用其他登录方式：\n- 账号密码登录\n- 手机号登录\n- 邮箱登录');
+}
+
+function showRegisterForm() {
+    const loginTab = document.getElementById('loginTab_password');
+    const registerForm = document.getElementById('registerForm');
+    const loginError = document.getElementById('loginError');
+    
+    loginError.textContent = '';
+    loginTab.style.display = 'none';
+    registerForm.style.display = 'block';
+}
+
+function showLoginForm() {
+    const loginTab = document.getElementById('loginTab_password');
+    const registerForm = document.getElementById('registerForm');
+    const loginError = document.getElementById('loginError');
+    
+    loginError.textContent = '';
+    registerForm.style.display = 'none';
+    loginTab.style.display = 'block';
+}
+
+function updateRegisterFields() {
+    const registerType = document.getElementById('registerType').value;
+    const usernameField = document.getElementById('registerUsernameField');
+    const phoneField = document.getElementById('registerPhoneField');
+    const emailField = document.getElementById('registerEmailField');
+    
+    usernameField.style.display = registerType === 'username' ? 'block' : 'none';
+    phoneField.style.display = registerType === 'phone' ? 'block' : 'none';
+    emailField.style.display = registerType === 'email' ? 'block' : 'none';
+}
+
+function sendRegisterPhoneCode() {
+    const phoneNumber = document.getElementById('registerPhoneNumber').value;
+    const phonePrefix = document.getElementById('registerPhonePrefix').value;
+    const errorDiv = document.getElementById('loginError');
+    const sendBtn = document.getElementById('sendRegisterCodeBtn');
+    
+    if (!phoneNumber) {
+        errorDiv.textContent = '请输入手机号';
+        return;
+    }
+    
+    const fullPhone = phonePrefix + phoneNumber;
+    
+    errorDiv.textContent = '正在发送验证码...';
+    sendBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('验证码已发送至 ' + fullPhone + '\n演示模式：验证码为 123456');
+        errorDiv.textContent = '';
+        
+        let countdown = 60;
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                sendBtn.textContent = '发送验证码';
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.textContent = `${countdown}秒后重试`;
+            }
+        }, 1000);
+    }, 1000);
+}
+
+function sendRegisterEmailCode() {
+    const emailAddress = document.getElementById('registerEmailAddress').value;
+    const errorDiv = document.getElementById('loginError');
+    const sendBtn = document.getElementById('sendRegisterEmailCodeBtn');
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailAddress || !emailRegex.test(emailAddress)) {
+        errorDiv.textContent = '请输入有效的邮箱地址';
+        return;
+    }
+    
+    errorDiv.textContent = '正在发送验证码...';
+    sendBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('验证码已发送至 ' + emailAddress + '\n演示模式：验证码为 123456');
+        errorDiv.textContent = '';
+        
+        let countdown = 60;
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timer);
+                sendBtn.textContent = '发送验证码';
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.textContent = `${countdown}秒后重试`;
+            }
+        }, 1000);
+    }, 1000);
+}
+
+function handleRegister() {
+    const registerType = document.getElementById('registerType').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (registerType === 'username') {
+        const username = document.getElementById('registerUsername').value;
+        const password = document.getElementById('registerPassword').value;
+        const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+        
+        if (!username || !password) {
+            errorDiv.textContent = '请填写完整信息';
+            return;
+        }
+        
+        if (password !== passwordConfirm) {
+            errorDiv.textContent = '两次密码输入不一致';
+            return;
+        }
+        
+        if (password.length < 6) {
+            errorDiv.textContent = '密码长度至少6位';
+            return;
+        }
+        
+        errorDiv.textContent = '';
+        alert('演示模式：用户注册成功！\n用户名：' + username + '\n\n提示：演示模式，实际注册功能需配置后端服务');
+        
+    } else if (registerType === 'phone') {
+        const phoneNumber = document.getElementById('registerPhoneNumber').value;
+        const phoneCode = document.getElementById('registerPhoneCode').value;
+        
+        if (!phoneNumber || !phoneCode) {
+            errorDiv.textContent = '请填写完整信息';
+            return;
+        }
+        
+        if (phoneCode !== '123456') {
+            errorDiv.textContent = '验证码错误（演示验证码：123456）';
+            return;
+        }
+        
+        errorDiv.textContent = '';
+        alert('演示模式：手机号注册成功！\n手机号：' + document.getElementById('registerPhonePrefix').value + phoneNumber + '\n\n提示：演示模式，实际注册功能需配置后端服务');
+        
+    } else if (registerType === 'email') {
+        const emailAddress = document.getElementById('registerEmailAddress').value;
+        const emailCode = document.getElementById('registerEmailCode').value;
+        
+        if (!emailAddress || !emailCode) {
+            errorDiv.textContent = '请填写完整信息';
+            return;
+        }
+        
+        if (emailCode !== '123456') {
+            errorDiv.textContent = '验证码错误（演示验证码：123456）';
+            return;
+        }
+        
+        errorDiv.textContent = '';
+        alert('演示模式：邮箱注册成功！\n邮箱：' + emailAddress + '\n\n提示：演示模式，实际注册功能需配置后端服务');
     }
 }
 
@@ -566,6 +1003,13 @@ async function loadOnlineToolsConfig() {
             const toolFiles = skillsFiles[tool.key] || [];
             const isDisabled = !config.enabled;
             
+            const totalSize = toolFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+            const formatSize = (bytes) => {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            };
+            
             return `
                 <div style="background: white; border: 2px solid var(--border-color); border-radius: 12px; margin-bottom: 1rem; overflow: hidden; opacity: ${isDisabled ? '0.6' : '1'};">
                     <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color);">
@@ -583,23 +1027,65 @@ async function loadOnlineToolsConfig() {
                         </label>
                     </div>
                     <div style="padding: 1rem; opacity: ${isDisabled ? '0.5' : '1'};">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                            <span style="font-weight: 600; font-size: 0.9rem;">📁 Skills知识文件</span>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary);">(${toolFiles.length}个文件)</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 600; font-size: 0.9rem;">📁 Skills知识文件</span>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">(${toolFiles.length}个文件, ${formatSize(totalSize)})</span>
+                            </div>
+                            ${!isDisabled && toolFiles.length > 0 ? `
+                                <button onclick="clearToolSkills('${tool.key}', '${tool.name}')" style="background: #ef4444; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">清空全部</button>
+                            ` : ''}
                         </div>
-                        <div id="toolFiles_${tool.key}">
-                            ${toolFiles.length > 0 ? toolFiles.map(f => `
-                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: var(--bg-color); border-radius: 6px; margin-bottom: 0.5rem;">
-                                    <span style="font-size: 0.85rem;">📄 ${f.originalName || f.name}</span>
-                                    ${!isDisabled ? `<button onclick="deleteToolSkillFile('${tool.key}', '${f.filename || f.name}')" style="background: #ef4444; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">删除</button>` : ''}
-                                </div>
-                            `).join('') : '<p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">暂无上传文件</p>'}
+                        
+                        ${toolFiles.length > 0 ? `
+                            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                                ${toolFiles.map(f => {
+                                    const fileSize = f.size || 0;
+                                    const isTextFile = /\.(txt|md|json|js|py|ts|html|css|xml|yaml|yml|sql|csv|log)$/i.test(f.filename);
+                                    const displayName = f.originalName || f.filename;
+                                    return `
+                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid var(--border-color); background: white;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                                            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+                                                <span style="font-size: 1.2rem;">${getFileIcon(f.filename)}</span>
+                                                <div style="overflow: hidden;">
+                                                    <div style="font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${displayName}">${displayName}</div>
+                                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">${formatSize(fileSize)}</div>
+                                                </div>
+                                            </div>
+                                            <div style="display: flex; gap: 0.25rem;">
+                                                ${isTextFile ? `
+                                                    <button onclick="previewToolFile('${tool.key}', '${f.filename}')" style="background: #10b981; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">预览</button>
+                                                ` : ''}
+                                                ${!isDisabled ? `
+                                                    <button onclick="deleteToolSkillFile('${tool.key}', '${f.filename}')" style="background: #ef4444; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">删除</button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 2rem; background: var(--bg-color); border-radius: 8px; margin-bottom: 1rem; border: 2px dashed var(--border-color);">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📂</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">暂无上传文件</div>
+                            </div>
+                        `}
+                        
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${isDisabled ? '#ccc' : 'var(--primary-color)'}; color: white; border-radius: 6px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; font-size: 0.85rem;">
+                                <span>⬆️ 上传文件</span>
+                                <input type="file" id="file_${tool.key}" style="display: none;" onchange="uploadToolSkillFile('${tool.key}', '${tool.name}', this)" ${isDisabled ? 'disabled' : ''} multiple accept=".txt,.md,.json,.js,.py,.ts,.html,.css,.xml,.yaml,.yml,.sql,.csv,.log,.pdf,.doc,.docx">
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${isDisabled ? '#ccc' : '#8b5cf6'}; color: white; border-radius: 6px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; font-size: 0.85rem;">
+                                <span>📦 上传ZIP</span>
+                                <input type="file" id="zip_${tool.key}" style="display: none;" onchange="uploadToolSkillFile('${tool.key}', '${tool.name}', this)" ${isDisabled ? 'disabled' : ''} accept=".zip">
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${isDisabled ? '#ccc' : '#10b981'}; color: white; border-radius: 6px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; font-size: 0.85rem;">
+                                <span>📁 上传文件夹</span>
+                                <input type="file" id="folder_${tool.key}" style="display: none;" onchange="uploadToolSkillFile('${tool.key}', '${tool.name}', this)" ${isDisabled ? 'disabled' : ''} webkitdirectory multiple>
+                            </label>
                         </div>
-                        <label style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${isDisabled ? '#ccc' : 'var(--primary-color)'}; color: white; border-radius: 6px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; font-size: 0.85rem; margin-top: 0.5rem;">
-                            <span>⬆️ 上传Skills文件</span>
-                            <input type="file" id="file_${tool.key}" style="display: none;" onchange="uploadToolSkillFile('${tool.key}', '${tool.name}', this)" ${isDisabled ? 'disabled' : ''} webkitdirectory multiple>
-                        </label>
-                        <span id="uploadStatus_${tool.key}" style="margin-left: 0.5rem; font-size: 0.8rem;"></span>
+                        <div id="uploadStatus_${tool.key}" style="margin-top: 0.5rem; font-size: 0.8rem;"></div>
                     </div>
                 </div>
             `;
@@ -607,6 +1093,18 @@ async function loadOnlineToolsConfig() {
     } catch (error) {
         document.getElementById('onlineToolsConfig').innerHTML = '<p style="color: #ef4444;">加载失败: ' + error.message + '</p>';
     }
+}
+
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+        'txt': '📝', 'md': '📝', 'json': '📋', 'js': '💻', 'ts': '💻',
+        'py': '🐍', 'html': '🌐', 'css': '🎨', 'xml': '📄', 'yaml': '⚙️',
+        'yml': '⚙️', 'sql': '🗄️', 'csv': '📊', 'log': '📋', 'pdf': '📕',
+        'doc': '📘', 'docx': '📘', 'zip': '📦', 'png': '🖼️', 'jpg': '🖼️',
+        'jpeg': '🖼️', 'gif': '🖼️', 'svg': '🖼️'
+    };
+    return icons[ext] || '📄';
 }
 
 async function uploadToolSkillFile(toolKey, toolName, input) {
@@ -667,6 +1165,61 @@ async function deleteToolSkillFile(toolKey, filename) {
         }
     } catch (error) {
         alert('删除失败: ' + error.message);
+    }
+}
+
+async function clearToolSkills(toolKey, toolName) {
+    if (!confirm(`确定要清空"${toolName}"的所有Skills文件吗？此操作不可撤销！`)) return;
+    
+    try {
+        const backendUrl = getBackendUrl();
+        const response = await fetch(`${backendUrl}/api/tools/folder/${toolKey}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('已清空所有文件');
+            loadOnlineToolsConfig();
+        } else {
+            alert('清空失败: ' + data.error);
+        }
+    } catch (error) {
+        alert('清空失败: ' + error.message);
+    }
+}
+
+async function previewToolFile(toolKey, filename) {
+    const modal = document.getElementById('toolModal');
+    const container = document.getElementById('toolContainer');
+    
+    container.innerHTML = `
+        <div style="padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">📄 ${filename}</h2>
+                <button onclick="closeModal()" style="background: var(--text-secondary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">关闭</button>
+            </div>
+            <div id="previewContent" style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; max-height: 60vh; overflow: auto; font-family: 'Consolas', monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-all;">
+                <div style="text-align: center; padding: 2rem;">加载中...</div>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    try {
+        const backendUrl = getBackendUrl();
+        const response = await fetch(`${backendUrl}/api/tools/file/${toolKey}/${encodeURIComponent(filename)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('previewContent').textContent = data.content;
+        } else {
+            document.getElementById('previewContent').innerHTML = '<div style="color: #ef4444; text-align: center; padding: 2rem;">❌ ' + data.error + '</div>';
+        }
+    } catch (error) {
+        document.getElementById('previewContent').innerHTML = '<div style="color: #ef4444; text-align: center; padding: 2rem;">❌ 加载失败: ' + error.message + '</div>';
     }
 }
 

@@ -2,8 +2,7 @@
   "features": [
     "testcase",
     "xmind",
-    "email",
-    "faker",
-    "timestamp"
+    "api",
+    "email"
   ]
 }

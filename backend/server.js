@@ -5,6 +5,8 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const AdmZip = require('adm-zip');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -16,6 +18,114 @@ app.use(bodyParser.json({ limit: '10mb' }));
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const toolsUploadDir = path.join(__dirname, 'tools-skills');
+if (!fs.existsSync(toolsUploadDir)) {
+    fs.mkdirSync(toolsUploadDir, { recursive: true });
+}
+
+function getToolMetadataPath(toolKey) {
+    return path.join(toolsUploadDir, toolKey, 'metadata.json');
+}
+
+function loadToolMetadata(toolKey) {
+    const metaPath = getToolMetadataPath(toolKey);
+    if (fs.existsSync(metaPath)) {
+        try {
+            const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+            const toolDir = path.join(toolsUploadDir, toolKey);
+            
+            const validFiles = metadata.files.filter(f => {
+                const filePath = path.join(toolDir, f.filename);
+                return fs.existsSync(filePath);
+            });
+            
+            if (validFiles.length !== metadata.files.length) {
+                metadata.files = validFiles;
+                saveToolMetadata(toolKey, metadata);
+            }
+            
+            return metadata;
+        } catch (e) {
+            return generateMetadataFromFiles(toolKey);
+        }
+    } else {
+        return generateMetadataFromFiles(toolKey);
+    }
+}
+
+function generateMetadataFromFiles(toolKey) {
+    const toolDir = path.join(toolsUploadDir, toolKey);
+    const metadata = { files: [] };
+    
+    if (fs.existsSync(toolDir)) {
+        const scanDir = (dir, basePath = '') => {
+            try {
+                const items = fs.readdirSync(dir);
+                items.forEach(item => {
+                    if (item === 'metadata.json') return;
+                    
+                    const itemPath = path.join(dir, item);
+                    if (fs.statSync(itemPath).isDirectory()) {
+                        scanDir(itemPath, basePath ? path.join(basePath, item) : item);
+                    } else {
+                        const uuidMatch = item.match(/^([a-f0-9]{16})([^/\\]+)$/i);
+                        if (uuidMatch) {
+                            const ext = uuidMatch[2];
+                            metadata.files.push({
+                                id: uuidMatch[1],
+                                filename: item,
+                                originalName: item,
+                                subPath: basePath,
+                                type: 'file',
+                                size: fs.statSync(itemPath).size,
+                                uploadedAt: fs.statSync(itemPath).mtime.toISOString()
+                            });
+                        } else {
+                            metadata.files.push({
+                                id: generateUUID(),
+                                filename: item,
+                                originalName: item,
+                                subPath: basePath,
+                                type: 'file',
+                                size: fs.statSync(itemPath).size,
+                                uploadedAt: fs.statSync(itemPath).mtime.toISOString()
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+            }
+        };
+        scanDir(toolDir);
+    }
+    
+    if (metadata.files.length > 0) {
+        saveToolMetadata(toolKey, metadata);
+    }
+    
+    return metadata;
+}
+
+function saveToolMetadata(toolKey, metadata) {
+    const toolDir = path.join(toolsUploadDir, toolKey);
+    if (!fs.existsSync(toolDir)) {
+        fs.mkdirSync(toolDir, { recursive: true });
+    }
+    const metaPath = getToolMetadataPath(toolKey);
+    fs.writeFileSync(metaPath, JSON.stringify(metadata, null, 2), 'utf8');
+}
+
+function generateUUID() {
+    return crypto.randomBytes(16).toString('hex');
+}
+
+function sanitizeFilename(filename) {
+    const ext = path.extname(filename);
+    const name = path.basename(filename, ext);
+    const uuid = generateUUID().substring(0, 8);
+    return uuid + ext;
 }
 
 const storage = multer.diskStorage({
@@ -80,11 +190,6 @@ const toolTemplates = {
         prompt: '请转换以下时间：{input}'
     }
 };
-
-const toolsUploadDir = path.join(__dirname, 'tools-skills');
-if (!fs.existsSync(toolsUploadDir)) {
-    fs.mkdirSync(toolsUploadDir, { recursive: true });
-}
 
 function getLocalResponse(toolType, input) {
     const responses = {
@@ -398,25 +503,39 @@ app.post('/api/skills/process', async (req, res) => {
         
         if (toolKey) {
             const toolDir = path.join(toolsUploadDir, toolKey);
+            const metadataPath = path.join(toolDir, 'metadata.json');
+            
             if (fs.existsSync(toolDir)) {
-                const readDirRecursive = (dir, basePath = '') => {
-                    const items = fs.readdirSync(dir);
-                    for (const item of items) {
-                        const fullPath = path.join(dir, item);
-                        const relativePath = basePath ? path.join(basePath, item) : item;
-                        if (fs.statSync(fullPath).isDirectory()) {
-                            readDirRecursive(fullPath, relativePath);
-                        } else if (fs.statSync(fullPath).isFile()) {
-                            try {
-                                const content = fs.readFileSync(fullPath, 'utf8');
-                                fileContents += `\n\n=== ${relativePath} ===\n${content}\n`;
-                            } catch (e) {
-                                console.error(`读取文件失败: ${fullPath}`, e.message);
+                const readTextFiles = (dir, basePath = '') => {
+                    try {
+                        const items = fs.readdirSync(dir);
+                        for (const item of items) {
+                            if (item === 'metadata.json') continue;
+                            
+                            const fullPath = path.join(dir, item);
+                            const relativePath = basePath ? path.join(basePath, item) : item;
+                            
+                            if (fs.statSync(fullPath).isDirectory()) {
+                                readTextFiles(fullPath, relativePath);
+                            } else if (fs.statSync(fullPath).isFile()) {
+                                const ext = path.extname(item).toLowerCase();
+                                const textExtensions = ['.md', '.txt', '.json', '.js', '.py', '.ts', '.html', '.css', '.xml', '.yaml', '.yml', '.sql', '.csv', '.log'];
+                                
+                                if (textExtensions.includes(ext)) {
+                                    try {
+                                        const content = fs.readFileSync(fullPath, 'utf8');
+                                        fileContents += `\n\n=== ${relativePath} ===\n${content}\n`;
+                                    } catch (e) {
+                                        console.error(`读取文本文件失败: ${fullPath}`, e.message);
+                                    }
+                                }
                             }
                         }
+                    } catch (e) {
+                        console.error(`读取目录失败: ${dir}`, e.message);
                     }
                 };
-                readDirRecursive(toolDir);
+                readTextFiles(toolDir);
             }
         }
         
@@ -459,10 +578,23 @@ app.post('/api/skills/process', async (req, res) => {
             const found = skillsList.find(s => s.id === parseInt(skillId));
             if (found) skillInfo = found;
         }
-
+        
+        let skillGuide = '';
+        if (fileContents) {
+            skillGuide = `
+【重要】用户已经上传了相关技能知识文件，请务必：
+1. 仔细阅读上述知识文件内容
+2. 严格按照知识文件中的规范和格式要求生成内容
+3. 如果知识文件中有示例，请参考示例的风格和结构
+4. 生成的测试用例、文档等应该与知识文件的格式保持一致
+5. 如果知识文件中的要求与通用实践有冲突，以知识文件为准
+`;
+        }
+        
         const systemPrompt = `你是一个专业的测试专家，擅长【${skillInfo.name}】技能。
 ${skillInfo.description ? `技能描述：${skillInfo.description}` : ''}
 ${fileContents ? `以下是与该技能相关的知识文件：\n${fileContents}` : ''}
+${skillGuide}
 请根据以上信息和用户的需求，提供专业的测试相关服务。`;
 
         const response = await axios.post(
@@ -782,7 +914,7 @@ app.post('/api/online-tools', (req, res) => {
 
 const toolMulter = multer({ dest: toolsUploadDir });
 
-app.post('/api/tools/upload', toolMulter.array('files', 50), (req, res) => {
+app.post('/api/tools/upload', toolMulter.array('files', 100), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.json({ success: false, error: '没有文件' });
@@ -795,45 +927,116 @@ app.post('/api/tools/upload', toolMulter.array('files', 50), (req, res) => {
             fs.mkdirSync(toolDir, { recursive: true });
         }
         
+        const metadata = loadToolMetadata(toolKey);
         const uploadedFiles = [];
+        const errors = [];
         
-        req.files.forEach(file => {
-            let relativePath = file.originalname;
-            
-            if (file.path && fs.existsSync(file.path)) {
-                const tempPathParts = file.path.split(path.sep);
-                const tempLen = tempPathParts.length;
-                if (tempLen > 1) {
-                    const lastParts = tempPathParts.slice(-2, -1)[0];
-                    if (lastParts && lastParts !== 'undefined' && lastParts !== toolKey) {
-                        relativePath = path.join(lastParts, file.originalname);
+        for (const file of req.files) {
+            try {
+                if (file.originalname.toLowerCase().endsWith('.zip')) {
+                    const zip = new AdmZip(file.path);
+                    const zipEntries = zip.getEntries();
+                    
+                    zipEntries.forEach(entry => {
+                        if (!entry.isDirectory) {
+                            const entryPath = entry.entryName;
+                            const entryPathParts = entryPath.replace(/\\/g, '/').split('/');
+                            entryPathParts.pop();
+                            const subPath = entryPathParts.join('/');
+                            
+                            const uuid = generateUUID();
+                            const ext = path.extname(entryPath);
+                            const safeFilename = uuid + ext;
+                            
+                            const targetDir = subPath ? path.join(toolDir, subPath) : toolDir;
+                            if (!fs.existsSync(targetDir)) {
+                                fs.mkdirSync(targetDir, { recursive: true });
+                            }
+                            
+                            const fullPath = path.join(targetDir, safeFilename);
+                            fs.writeFileSync(fullPath, entry.getData());
+                            
+                            metadata.files.push({
+                                id: uuid,
+                                filename: subPath ? `${subPath}/${safeFilename}` : safeFilename,
+                                originalName: entryPath,
+                                subPath: subPath,
+                                type: 'zip',
+                                size: entry.header.size,
+                                uploadedAt: new Date().toISOString()
+                            });
+                            
+                            uploadedFiles.push({
+                                filename: safeFilename,
+                                originalName: entryPath,
+                                subPath: subPath,
+                                type: 'zip',
+                                size: entry.header.size
+                            });
+                        }
+                    });
+                    
+                    fs.unlinkSync(file.path);
+                } else {
+                    let relativePath = file.originalname;
+                    
+                    if (file.path && fs.existsSync(file.path)) {
+                        const tempPathParts = file.path.split(path.sep);
+                        const tempLen = tempPathParts.length;
+                        if (tempLen > 1) {
+                            const lastParts = tempPathParts.slice(-2, -1)[0];
+                            if (lastParts && lastParts !== 'undefined' && lastParts !== toolKey) {
+                                relativePath = path.join(lastParts, file.originalname);
+                            }
+                        }
                     }
+                    
+                    const relativePathObj = path.parse(relativePath);
+                    const subPath = relativePathObj.dir.replace(/\\/g, '/');
+                    const uuid = generateUUID();
+                    const ext = relativePathObj.ext;
+                    const safeFilename = uuid + ext;
+                    
+                    const targetDir = subPath ? path.join(toolDir, subPath) : toolDir;
+                    if (!fs.existsSync(targetDir)) {
+                        fs.mkdirSync(targetDir, { recursive: true });
+                    }
+                    
+                    const fullPath = path.join(targetDir, safeFilename);
+                    fs.renameSync(file.path, fullPath);
+                    
+                    metadata.files.push({
+                        id: uuid,
+                        filename: subPath ? `${subPath}/${safeFilename}` : safeFilename,
+                        originalName: relativePath.replace(/\\/g, '/'),
+                        subPath: subPath,
+                        type: 'file',
+                        size: file.size,
+                        uploadedAt: new Date().toISOString()
+                    });
+                    
+                    uploadedFiles.push({
+                        filename: safeFilename,
+                        originalName: relativePath.replace(/\\/g, '/'),
+                        subPath: subPath,
+                        type: 'file',
+                        size: file.size
+                    });
                 }
+            } catch (fileError) {
+                errors.push(`${file.originalname}: ${fileError.message}`);
             }
-            
-            const relativePathObj = path.parse(relativePath);
-            const destDir = path.join(toolDir, relativePathObj.dir);
-            
-            if (!fs.existsSync(destDir)) {
-                fs.mkdirSync(destDir, { recursive: true });
-            }
-            
-            let newPath = path.join(toolDir, relativePath);
-            let finalPath = newPath;
-            let counter = 1;
-            
-            while (fs.existsSync(finalPath)) {
-                const ext = path.extname(relativePath);
-                const basename = path.basename(relativePath, ext);
-                finalPath = path.join(toolDir, relativePathObj.dir, `${basename}_${counter}${ext}`);
-                counter++;
-            }
-            
-            fs.renameSync(file.path, finalPath);
-            uploadedFiles.push(relativePath);
-        });
+        }
+        
+        saveToolMetadata(toolKey, metadata);
 
-        res.json({ success: true, filenames: uploadedFiles });
+        res.json({ 
+            success: true, 
+            filenames: uploadedFiles.map(f => f.filename),
+            details: uploadedFiles,
+            errors: errors.length > 0 ? errors : undefined,
+            message: `成功上传 ${uploadedFiles.length} 个文件${errors.length > 0 ? `，${errors.length} 个失败` : ''}`
+        });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }
@@ -849,25 +1052,66 @@ app.get('/api/tools/files', (req, res) => {
             toolDirs.forEach(toolKey => {
                 const toolDir = path.join(toolsUploadDir, toolKey);
                 if (fs.statSync(toolDir).isDirectory()) {
-                    const files = [];
-                    const walkDir = (dir, basePath = '') => {
-                        const items = fs.readdirSync(dir);
-                        items.forEach(item => {
-                            const fullPath = path.join(dir, item);
-                            const relativePath = basePath ? path.join(basePath, item) : item;
-                            if (fs.statSync(fullPath).isDirectory()) {
-                                walkDir(fullPath, relativePath);
-                            } else {
-                                files.push({
-                                    filename: relativePath,
-                                    originalName: relativePath,
-                                    isDirectory: false
-                                });
+                    const metadata = loadToolMetadata(toolKey);
+                    
+                    const validFiles = metadata.files.filter(f => {
+                        const filePath = path.join(toolDir, f.filename);
+                        return fs.existsSync(filePath);
+                    });
+                    
+                    if (validFiles.length !== metadata.files.length) {
+                        metadata.files = validFiles;
+                        saveToolMetadata(toolKey, metadata);
+                    }
+                    
+                    const cleanupDir = (dir, basePath = '') => {
+                        try {
+                            const items = fs.readdirSync(dir);
+                            items.forEach(item => {
+                                const itemPath = path.join(dir, item);
+                                const relativePath = basePath ? `${basePath}/${item}` : item;
+                                
+                                if (fs.statSync(itemPath).isDirectory()) {
+                                    cleanupDir(itemPath, relativePath);
+                                } else if (item === 'metadata.json') {
+                                } else {
+                                    const subPath = basePath.replace(/\\/g, '/');
+                                    const isInMetadata = metadata.files.some(f => {
+                                        const metadataBasename = path.basename(f.filename);
+                                        const metadataSubPath = f.subPath || '';
+                                        return metadataBasename === item && metadataSubPath === subPath;
+                                    });
+                                    
+                                    if (!isInMetadata) {
+                                        try {
+                                            fs.unlinkSync(itemPath);
+                                        } catch (e) {
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            try {
+                                const remaining = fs.readdirSync(dir);
+                                if (remaining.length === 0 && dir !== toolDir) {
+                                    fs.rmdirSync(dir);
+                                }
+                            } catch (e) {
                             }
-                        });
+                        } catch (e) {
+                        }
                     };
-                    walkDir(toolDir);
-                    skillsFiles[toolKey] = files;
+                    cleanupDir(toolDir);
+                    
+                    skillsFiles[toolKey] = validFiles.map(f => ({
+                        id: f.id,
+                        filename: f.filename,
+                        originalName: f.originalName,
+                        subPath: f.subPath || '',
+                        type: f.type,
+                        size: f.size,
+                        uploadedAt: f.uploadedAt
+                    }));
                 }
             });
         }
@@ -881,27 +1125,139 @@ app.get('/api/tools/files', (req, res) => {
 app.delete('/api/tools/files/:toolKey/:filename', (req, res) => {
     try {
         const { toolKey, filename } = req.params;
-        let decodedFilename = decodeURIComponent(filename);
+        let targetFilename = decodeURIComponent(filename);
         
-        let filePath = path.join(toolsUploadDir, toolKey, decodedFilename);
+        const toolDir = path.join(toolsUploadDir, toolKey);
+        const metadata = loadToolMetadata(toolKey);
         
-        if (!fs.existsSync(filePath)) {
-            const normalizedFilename = decodedFilename.replace(/^tools-skills[\\\/]/, '');
-            filePath = path.join(toolsUploadDir, toolKey, normalizedFilename);
+        const fileIndex = metadata.files.findIndex(f => 
+            f.filename === targetFilename || f.originalName === targetFilename
+        );
+        
+        if (fileIndex === -1) {
+            const filePath = path.join(toolDir, targetFilename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                metadata.files = metadata.files.filter(f => f.filename !== targetFilename);
+                saveToolMetadata(toolKey, metadata);
+                return res.json({ success: true });
+            }
+            return res.json({ success: false, error: '文件不存在' });
         }
         
-        if (!fs.existsSync(filePath)) {
-            const parts = decodedFilename.split(path.sep);
-            const actualFilename = parts[parts.length - 1];
-            filePath = path.join(toolsUploadDir, toolKey, actualFilename);
-        }
+        const fileInfo = metadata.files[fileIndex];
+        const filePath = path.join(toolDir, fileInfo.filename);
         
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
-            res.json({ success: true });
-        } else {
-            res.json({ success: false, error: '文件不存在: ' + filePath });
         }
+        
+        metadata.files.splice(fileIndex, 1);
+        saveToolMetadata(toolKey, metadata);
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.delete('/api/tools/folder/:toolKey', (req, res) => {
+    try {
+        const { toolKey } = req.params;
+        const folderPath = path.join(toolsUploadDir, toolKey);
+        
+        saveToolMetadata(toolKey, { files: [] });
+        
+        if (fs.existsSync(folderPath)) {
+            const deleteRecursive = (dir) => {
+                if (fs.existsSync(dir)) {
+                    fs.readdirSync(dir).forEach(file => {
+                        const curPath = path.join(dir, file);
+                        if (fs.lstatSync(curPath).isDirectory()) {
+                            deleteRecursive(curPath);
+                        } else if (file !== 'metadata.json') {
+                            fs.unlinkSync(curPath);
+                        }
+                    });
+                    const metadataPath = path.join(dir, 'metadata.json');
+                    if (fs.existsSync(metadataPath)) {
+                        fs.unlinkSync(metadataPath);
+                    }
+                }
+            };
+            deleteRecursive(folderPath);
+            res.json({ success: true, message: '文件夹已清空' });
+        } else {
+            res.json({ success: true, message: '文件夹已清空' });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/tools/file/:toolKey/*', (req, res) => {
+    try {
+        const toolKey = req.params.toolKey;
+        const filePathParts = req.params[0] || '';
+        const toolDir = path.join(toolsUploadDir, toolKey);
+        
+        let actualFilename = filePathParts;
+        
+        if (!fs.existsSync(path.join(toolDir, actualFilename))) {
+            const metadata = loadToolMetadata(toolKey);
+            const fileInfo = metadata.files.find(f => 
+                f.filename === filePathParts || f.originalName === filePathParts
+            );
+            if (fileInfo) {
+                actualFilename = fileInfo.filename;
+            }
+        }
+        
+        const filePath = path.join(toolDir, actualFilename);
+        
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+            const content = fs.readFileSync(filePath, 'utf8');
+            res.json({ success: true, content, filename: filePathParts });
+        } else {
+            res.json({ success: false, error: '文件不存在' });
+        }
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/tools/stats/:toolKey', (req, res) => {
+    try {
+        const { toolKey } = req.params;
+        const toolDir = path.join(toolsUploadDir, toolKey);
+        
+        if (!fs.existsSync(toolDir)) {
+            return res.json({ success: true, stats: { totalFiles: 0, totalSize: 0, folders: [] } });
+        }
+        
+        const stats = {
+            totalFiles: 0,
+            totalSize: 0,
+            folders: []
+        };
+        
+        const walkDir = (dir, basePath = '') => {
+            const items = fs.readdirSync(dir);
+            items.forEach(item => {
+                const fullPath = path.join(dir, item);
+                const relativePath = basePath ? path.join(basePath, item) : item;
+                if (fs.statSync(fullPath).isDirectory()) {
+                    stats.folders.push(relativePath);
+                    walkDir(fullPath, relativePath);
+                } else {
+                    stats.totalFiles++;
+                    stats.totalSize += fs.statSync(fullPath).size;
+                }
+            });
+        };
+        
+        walkDir(toolDir);
+        res.json({ success: true, stats });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }

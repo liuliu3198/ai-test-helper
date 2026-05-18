@@ -595,6 +595,11 @@ function openTool(toolKey) {
         return;
     }
     
+    if (toolKey === 'apitest') {
+        window.open('https://app.apifox.com/user/login', '_blank');
+        return;
+    }
+    
     const tool = toolTemplates[toolKey];
     const modal = document.getElementById('toolModal');
     const container = document.getElementById('toolContainer');
